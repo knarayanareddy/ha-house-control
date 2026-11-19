@@ -4,7 +4,7 @@ import type { Plan, RoomDef, NormOpening, FurnitureDef, LightDef, AcDef, FloorKi
 const NS = 'http://www.w3.org/2000/svg';
 const SNAP = .1;
 const MIN_ROOM = .6;
-const FLOOR: Record<string,string> = { oak:'#4a3d2e', walnut:'#3c2f28', tile:'#39424b', stone:'#30353c' };
+const FLOOR: Record<string,string> = { oak:'#253346', walnut:'#2c2522', tile:'#1e2d3d', stone:'#202936' };
 const snap = (v:number) => Math.round(v / SNAP) * SNAP;
 export function screenToMetres(group:SVGGraphicsElement,screenX:number,screenY:number):[number,number]{const svg=group.ownerSVGElement!;const p=svg.createSVGPoint();p.x=screenX;p.y=screenY;const q=p.matrixTransform(group.getScreenCTM()!.inverse());return [q.x,q.y];}
 export function metresToScreen(group:SVGGraphicsElement,x:number,z:number):[number,number]{const svg=group.ownerSVGElement!;const p=svg.createSVGPoint();p.x=x;p.y=z;const q=p.matrixTransform(group.getScreenCTM()!);return [q.x,q.y];}
@@ -24,7 +24,20 @@ export class FloorplanCanvas extends LitElement {
   private gesture?: { kind:string; id:string; index:number; handle?:string; start:[number,number]; room?:RoomDef; opening?:NormOpening; startZoom?:number; startDistance?:number; startCenter?:[number,number] };
   private roomCounter = 1;
   static styles = css`
-    :host{display:block;height:100%;box-sizing:border-box;color:var(--primary-text-color,#eee);font:13px/1.35 system-ui,sans-serif}.toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:7px;background:#151b28;border-radius:8px 8px 0 0}.toolbar button{border:1px solid #495264;background:#232c3d;color:inherit;border-radius:6px;padding:6px 9px;cursor:pointer}.toolbar button.active{background:#385c8c;border-color:#83b5ff}.viewport{width:100%;height:calc(100% - 70px);min-height:280px;background:#111722;border:1px solid #384152;border-radius:0 0 8px 8px;overflow:hidden;touch-action:none;cursor:grab}.viewport:active{cursor:grabbing}.room{stroke:#d6dce6;stroke-width:.055;vector-effect:non-scaling-stroke;cursor:move}.room.selected{stroke:#72aaff;stroke-width:.09}.room-label{fill:#fff;paint-order:stroke;stroke:#111722;stroke-width:.06;text-anchor:middle;dominant-baseline:middle;font-size:.32px;pointer-events:none}.handle{fill:#f8fbff;stroke:#4287ef;stroke-width:.045;vector-effect:non-scaling-stroke;cursor:move}.opening{stroke:#f4d7a4;stroke-width:.14;stroke-linecap:round;vector-effect:non-scaling-stroke;cursor:move}.opening.window{stroke:#80b5ff;stroke-width:.09}.fixture{fill:#ffe19a;stroke:#111722;stroke-width:.055;vector-effect:non-scaling-stroke;cursor:move}.ac{fill:#7ee6ff;stroke:#101722;stroke-width:.05;vector-effect:non-scaling-stroke;cursor:move}.furniture{fill:#a6adbf99;stroke:#e0e5ef;stroke-width:.045;vector-effect:non-scaling-stroke;cursor:move}.furn-label{fill:#fff;font-size:.18px;text-anchor:middle;pointer-events:none}.grid-label{fill:#8290a4;font-size:.22px;pointer-events:none}.legend{display:flex;justify-content:space-between;color:#aab5c6;padding:5px 2px;font-size:11px}
+    :host{display:block;height:100%;box-sizing:border-box;color:var(--primary-text-color,#eee);font:13px/1.35 system-ui,sans-serif}.toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:7px;background:#151b28;border-radius:8px 8px 0 0}.toolbar button{border:1px solid #495264;background:#232c3d;color:inherit;border-radius:6px;padding:6px 9px;cursor:pointer}.toolbar button.active{background:#385c8c;border-color:#83b5ff}.viewport{width:100%;height:calc(100% - 70px);min-height:280px;background:#111722;border:1px solid #384152;border-radius:0 0 8px 8px;overflow:hidden;touch-action:none;cursor:grab}.viewport:active{cursor:grabbing}
+    .room{stroke:#60a5fa;stroke-width:2px;vector-effect:non-scaling-stroke;cursor:move;transition:stroke .15s}
+    .room:hover{stroke:#93c5fd}
+    .room.selected{stroke:#f59e0b;stroke-width:3px}
+    .room-label{fill:#ffffff;paint-order:stroke;stroke:#0a0e1a;stroke-width:.08;text-anchor:middle;dominant-baseline:middle;font-size:.38px;font-weight:700;pointer-events:none}
+    .handle{fill:#f8fbff;stroke:#4287ef;stroke-width:2px;vector-effect:non-scaling-stroke;cursor:move}
+    .opening{stroke:#f59e0b;stroke-width:4px;stroke-linecap:round;vector-effect:non-scaling-stroke;cursor:move}
+    .opening.window{stroke:#38bdf8;stroke-width:3px}
+    .fixture{fill:#ffe19a;stroke:#111722;stroke-width:2px;vector-effect:non-scaling-stroke;cursor:move}
+    .ac{fill:#7ee6ff;stroke:#101722;stroke-width:2px;vector-effect:non-scaling-stroke;cursor:move}
+    .furniture{fill:#a6adbf99;stroke:#e0e5ef;stroke-width:1.5px;vector-effect:non-scaling-stroke;cursor:move}
+    .furn-label{fill:#fff;font-size:.22px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#111722;stroke-width:.04}
+    .grid-label{fill:#8290a4;font-size:11px;pointer-events:none}
+    .legend{display:flex;justify-content:space-between;color:#aab5c6;padding:5px 2px;font-size:11px}
   `;
   protected willUpdate(changed:PropertyValues) { if (changed.has('plan') && !this.plan) this.plan={rooms:[]}; }
   private emit(plan:Plan) { this.dispatchEvent(new CustomEvent('plan-changed',{detail:{plan},bubbles:true,composed:true})); }

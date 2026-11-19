@@ -179,7 +179,7 @@ export class HouseControlCard extends LitElement {
     .step{display:flex;align-items:center;justify-content:center;gap:24px;margin:12px}.step output{font-size:42px;font-variant-numeric:tabular-nums}.step button{width:48px;height:48px;font-size:24px;padding:0}.mode,.fan{display:flex;gap:6px;flex-wrap:wrap}.climate-meta{text-align:center;color:#bdc7d8;font-size:13px}
     .mode-toggle{position:absolute;z-index:5;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border:1px solid #ffffff26;border-radius:999px;background:#0f172acc;backdrop-filter:blur(14px);box-shadow:0 6px 24px #0005}
     .mode-toggle button{border:0;border-radius:999px;background:transparent;color:#d5dfef;padding:8px 12px;font:600 12px/1 system-ui,sans-serif;cursor:pointer;white-space:nowrap}.mode-toggle button.active{background:#38bdf8;color:#062132;box-shadow:0 0 16px #38bdf855}
-    .content{position:absolute;inset:0}.three-pane,.two-pane{display:none;min-width:0;min-height:0}.content.mode-3d .three-pane{display:block;position:absolute;inset:0}.content.mode-2d .two-pane{display:block;position:absolute;inset:0}.content.mode-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#526074}.content.mode-split .three-pane,.content.mode-split .two-pane{display:block;position:relative;overflow:hidden;background:#0a0e1a}.three-pane canvas{width:100%;height:100%;display:block;touch-action:none}.two-pane floorplan-canvas{display:block;width:100%;height:100%;overflow:auto}.mode-split .two-pane floorplan-canvas{height:100%}
+    .content{position:absolute;inset:0}.three-pane,.two-pane{display:none;min-width:0;min-height:0}.content.mode-3d .three-pane{display:block;position:absolute;inset:0}.content.mode-2d .two-pane{display:block;position:absolute;inset:0;padding-top:54px;box-sizing:border-box}.content.mode-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#526074;padding-top:54px;box-sizing:border-box}.content.mode-split .three-pane,.content.mode-split .two-pane{display:block;position:relative;overflow:hidden;background:#0a0e1a}.three-pane canvas{width:100%;height:100%;display:block;touch-action:none}.two-pane floorplan-canvas{display:block;width:100%;height:100%;overflow:auto}.mode-split .two-pane floorplan-canvas{height:100%}
     .assist-wrap{position:absolute;z-index:7;bottom:64px;left:50%;transform:translateX(-50%);width:min(540px,90%)}.assist-response{margin:0 0 8px auto;max-width:92%;max-height:112px;overflow:auto;padding:11px 14px;border:1px solid #ffffff2b;border-radius:16px;background:#101827e8;color:#eef5ff;backdrop-filter:blur(16px);box-shadow:0 8px 30px #0007;font-size:13px}.assist-bar{display:flex;align-items:center;gap:9px;padding:6px 8px 6px 14px;border:1px solid #ffffff35;border-radius:999px;background:#101827dd;backdrop-filter:blur(16px);box-shadow:0 8px 32px #0008}.assist-bar .sparkle{font-size:19px}.assist-bar input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#fff;font:14px system-ui,sans-serif}.assist-bar input::placeholder{color:#aab6c8}.assist-bar button{width:34px;height:34px;border:0;border-radius:50%;background:#38bdf8;color:#062132;font-size:20px;line-height:1;cursor:pointer}.assist-bar button:disabled{opacity:.55;cursor:wait}
     .error-overlay{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box;background:#0a0e1aee}
     @media(max-width:620px){.mode-toggle button{padding:8px 8px;font-size:11px}.content.mode-split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.assist-wrap{bottom:54px}.assist-bar input{font-size:13px}}
@@ -329,7 +329,7 @@ export class HouseControlCard extends LitElement {
         ${this.assistantMessage ? html`<div class="assist-response" role="status">${this.assistantMessage}</div>` : ''}
         <label class="assist-bar"><span class="sparkle" aria-hidden="true">✨</span><input type="text" name="query" autocomplete="off" placeholder="Ask AI... (e.g. 'Make bedroom cozy', 'Turn off all ACs', 'Add a 4x3 balcony')" ?disabled=${this.promptBusy}><button type="submit" aria-label="Send prompt" ?disabled=${this.promptBusy}>${this.promptBusy?'…':'➔'}</button></label>
       </form>
-      ${plan.scenes?.length ? html`<nav class="scenes" aria-label="Lighting scenes">${plan.scenes.map((scene) => html`<button @click=${() => this.applyScene(scene)}>${scene.name}</button>`)}</nav>` : ''}
+      ${this.activeMode !== '2d' && plan.scenes?.length ? html`<nav class="scenes" aria-label="Lighting scenes">${plan.scenes.map((scene) => html`<button @click=${() => this.applyScene(scene)}>${scene.name}</button>`)}</nav>` : ''}
       ${this.hoveredFixture ? html`<div class="tooltip" style=${`left:${Math.min(this.hoveredFixture.x, (this.clientWidth || 400) - 220)}px;top:${Math.min(this.hoveredFixture.y, 80)}px`}><strong>${this.hoveredFixture.room} · ${this.hoveredFixture.name}</strong>${this.hoveredFixture.stateText}</div>` : ''}
       ${sheet ? html`<div class="veil" @click=${this.closeSheet}><section class="sheet" role="dialog" aria-modal="true" @click=${(e: Event) => e.stopPropagation()}>
         <header class="sheet-head"><div><h3>${light?.config.name ?? ac?.config.name}</h3><div class="subtle">${roomName} · ${sheet.entityId}</div></div><button class="close" aria-label="Close" @click=${this.closeSheet}>×</button></header>
@@ -345,14 +345,43 @@ export class HouseControlCard extends LitElement {
     </div>`;
   }
 
+  private setupListeners(): void {
+    if (!this.canvas) return;
+    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+    this.canvas.removeEventListener('pointermove', this.onPointerMove);
+    this.canvas.removeEventListener('pointerup', this.onPointerUp);
+    this.canvas.removeEventListener('pointercancel', this.onPointerUp);
+    this.canvas.addEventListener('pointerdown', this.onPointerDown);
+    this.canvas.addEventListener('pointermove', this.onPointerMove);
+    this.canvas.addEventListener('pointerup', this.onPointerUp);
+    this.canvas.addEventListener('pointercancel', this.onPointerUp);
+  }
+
+  private removeListeners(): void {
+    if (!this.canvas) return;
+    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+    this.canvas.removeEventListener('pointermove', this.onPointerMove);
+    this.canvas.removeEventListener('pointerup', this.onPointerUp);
+    this.canvas.removeEventListener('pointercancel', this.onPointerUp);
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.shadowRoot) {
+      const canvas = this.shadowRoot.querySelector('#three-stage') as HTMLCanvasElement;
+      if (canvas) {
+        this.canvas = canvas;
+        if (!this.world) this.mountWorld();
+        this.setupListeners();
+      }
+    }
+  }
+
   protected firstUpdated(): void {
     const canvas = this.shadowRoot!.querySelector('#three-stage') as HTMLCanvasElement;
     this.canvas = canvas;
     this.mountWorld();
-    canvas.addEventListener('pointerdown', this.onPointerDown);
-    canvas.addEventListener('pointermove', this.onPointerMove);
-    canvas.addEventListener('pointerup', this.onPointerUp);
-    canvas.addEventListener('pointercancel', this.onPointerUp);
+    this.setupListeners();
   }
 
   private mountWorld() {
@@ -369,6 +398,10 @@ export class HouseControlCard extends LitElement {
       if (this.hass) this.bridge.setHass(this.hass);
       this.renderError = undefined;
       this.world.requestRender(10);
+      requestAnimationFrame(() => {
+        this.world?.resize();
+        this.world?.requestRender(10);
+      });
     } catch (err) {
       console.error('HouseControl: Error initializing 3D stage', err);
       this.renderError = err instanceof Error ? err.message : String(err);
@@ -381,19 +414,12 @@ export class HouseControlCard extends LitElement {
     if (changed.has('hass') && this.hass) this.bridge?.setHass(this.hass);
     // Resize the existing renderer after CSS mode changes. Never dispose or
     // replace the canvas merely to switch views: keep its WebGL context alive.
-    if (changed.has('activeMode')) { this.world?.resize(); this.world?.requestRender(4); }
+    if (changed.has('activeMode')) { this.world?.resize(); this.world?.requestRender(10); }
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.canvas?.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas?.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas?.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas?.removeEventListener('pointercancel', this.onPointerUp);
-    this.canvas = undefined;
-    this.bridge = undefined;
-    this.world?.dispose();
-    this.world = undefined;
+    this.removeListeners();
   }
 }
 
