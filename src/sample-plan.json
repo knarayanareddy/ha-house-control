@@ -1,0 +1,40 @@
+{
+  "name": "Sample Apartment",
+  "outdoorTemp": 21,
+  "camera": { "azimuth": 32, "elevation": 46 },
+  "rooms": [
+    {
+      "id": "living_room",
+      "name": "Living Room",
+      "x": 0,
+      "y": 0,
+      "width": 6.0,
+      "length": 4.5,
+      "height": 2.8,
+      "floor": "oak",
+      "walls": { "north": "solid", "south": "solid", "east": "solid", "west": "solid" }
+    }
+  ],
+  "doors": [
+    { "wallId": "living_room_south", "offset": 0.6, "width": 0.9, "height": 2.1 }
+  ],
+  "windows": [
+    { "wallId": "living_room_north", "offset": 1.4, "width": 1.8, "sill": 0.85, "height": 1.2 },
+    { "wallId": "living_room_east", "offset": 1.2, "width": 1.4, "sill": 0.85, "height": 1.2 }
+  ],
+  "furniture": [
+    { "type": "sofa", "roomId": "living_room", "x": 1.5, "y": 1.0, "rotation": 0 },
+    { "type": "coffeeTable", "roomId": "living_room", "x": 3.1, "y": 1.7, "rotation": 0 },
+    { "type": "rug", "roomId": "living_room", "x": 3.1, "y": 2.1, "rotation": 0 },
+    { "type": "tv", "roomId": "living_room", "x": 5.55, "y": 2.25, "rotation": 270 },
+    { "type": "bookshelf", "roomId": "living_room", "x": 0.35, "y": 4.1, "rotation": 180 },
+    { "type": "plant", "roomId": "living_room", "x": 5.5, "y": 0.5, "rotation": 0 },
+    { "type": "armchair", "roomId": "living_room", "x": 4.6, "y": 3.6, "rotation": 220 }
+  ],
+  "lights": [
+    { "id": "light.living_room_ceiling", "roomId": "living_room", "x": 3.0, "y": 2.25, "z": 2.7, "fixture": "ceiling_pendant" }
+  ],
+  "acs": [
+    { "id": "climate.living_room_ac", "roomId": "living_room", "wall": "north", "x": 4.6, "y": 2.3 }
+  ]
+}
