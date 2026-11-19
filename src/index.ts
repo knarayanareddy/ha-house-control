@@ -131,6 +131,53 @@ export class HouseControlCard extends LitElement {
       this.requestUpdate();
     }
   };
+  private onWheel = (event: WheelEvent) => {
+    event.preventDefault();
+    if (!this.world) return;
+    const camera = this.world.camera;
+    const offset = camera.position.clone().sub(this.cameraTarget);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    const factor = event.deltaY < 0 ? 0.88 : 1.14;
+    spherical.radius = THREE.MathUtils.clamp(spherical.radius * factor, 2, 45);
+    camera.position.copy(this.cameraTarget).add(new THREE.Vector3().setFromSpherical(spherical));
+    camera.lookAt(this.cameraTarget);
+    this.world.viewFromCamera();
+    this.world.requestRender(10);
+  };
+
+  private zoom3D = (direction: number) => {
+    if (!this.world) return;
+    const camera = this.world.camera;
+    const offset = camera.position.clone().sub(this.cameraTarget);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    const factor = direction < 0 ? 0.82 : 1.22;
+    spherical.radius = THREE.MathUtils.clamp(spherical.radius * factor, 2, 45);
+    camera.position.copy(this.cameraTarget).add(new THREE.Vector3().setFromSpherical(spherical));
+    camera.lookAt(this.cameraTarget);
+    this.world.viewFromCamera();
+    this.world.requestRender(15);
+  };
+
+  private resetCamera3D = () => {
+    if (!this.world) return;
+    const plan = this.config?.plan ?? (samplePlan as unknown as Plan);
+    const norm = normalizePlan(plan);
+    const { minX, minZ, maxX, maxZ } = norm.bounds;
+    this.cameraTarget.set((minX + maxX) / 2, 1, (minZ + maxZ) / 2);
+    const span = Math.max(maxX - minX, maxZ - minZ);
+    const dist = (span / (2 * Math.tan(THREE.MathUtils.degToRad(38 / 2)))) * 1.55 + 2;
+    const az = THREE.MathUtils.degToRad(norm.camera?.azimuth ?? 34);
+    const el = THREE.MathUtils.degToRad(norm.camera?.elevation ?? 47);
+    this.world.camera.position.set(
+      this.cameraTarget.x + dist * Math.sin(az) * Math.cos(el),
+      this.cameraTarget.y + dist * Math.sin(el),
+      this.cameraTarget.z + dist * Math.cos(az) * Math.cos(el)
+    );
+    this.world.camera.lookAt(this.cameraTarget);
+    this.world.viewFromCamera();
+    this.world.requestRender(25);
+  };
+
   private measureGesture() {
     const points = [...this.gesture.values()];
     if (!points.length) return undefined;
@@ -182,7 +229,10 @@ export class HouseControlCard extends LitElement {
     .content{position:absolute;inset:0}.three-pane,.two-pane{display:none;min-width:0;min-height:0}.content.mode-3d .three-pane{display:block;position:absolute;inset:0}.content.mode-2d .two-pane{display:block;position:absolute;inset:0;padding-top:54px;box-sizing:border-box}.content.mode-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#526074;padding-top:54px;box-sizing:border-box}.content.mode-split .three-pane,.content.mode-split .two-pane{display:block;position:relative;overflow:hidden;background:#0a0e1a}.three-pane canvas{width:100%;height:100%;display:block;touch-action:none}.two-pane floorplan-canvas{display:block;width:100%;height:100%;overflow:auto}.mode-split .two-pane floorplan-canvas{height:100%}
     .assist-wrap{position:absolute;z-index:7;bottom:64px;left:50%;transform:translateX(-50%);width:min(540px,90%)}.assist-response{margin:0 0 8px auto;max-width:92%;max-height:112px;overflow:auto;padding:11px 14px;border:1px solid #ffffff2b;border-radius:16px;background:#101827e8;color:#eef5ff;backdrop-filter:blur(16px);box-shadow:0 8px 30px #0007;font-size:13px}.assist-bar{display:flex;align-items:center;gap:9px;padding:6px 8px 6px 14px;border:1px solid #ffffff35;border-radius:999px;background:#101827dd;backdrop-filter:blur(16px);box-shadow:0 8px 32px #0008}.assist-bar .sparkle{font-size:19px}.assist-bar input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#fff;font:14px system-ui,sans-serif}.assist-bar input::placeholder{color:#aab6c8}.assist-bar button{width:34px;height:34px;border:0;border-radius:50%;background:#38bdf8;color:#062132;font-size:20px;line-height:1;cursor:pointer}.assist-bar button:disabled{opacity:.55;cursor:wait}
     .error-overlay{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box;background:#0a0e1aee}
-    @media(max-width:620px){.mode-toggle button{padding:8px 8px;font-size:11px}.content.mode-split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.assist-wrap{bottom:54px}.assist-bar input{font-size:13px}}
+    .zoom-controls{position:absolute;z-index:6;right:14px;bottom:74px;display:flex;flex-direction:column;gap:5px;background:#0f172acc;padding:5px;border-radius:12px;border:1px solid #ffffff25;backdrop-filter:blur(14px);box-shadow:0 4px 20px #0008}
+    .zoom-controls button{width:32px;height:32px;border:1px solid #ffffff20;background:#ffffff10;color:#e2e8f0;border-radius:8px;font-size:16px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease}
+    .zoom-controls button:hover{background:#38bdf8;color:#062132;border-color:#38bdf8;box-shadow:0 0 12px #38bdf855}
+    @media(max-width:620px){.mode-toggle button{padding:8px 8px;font-size:11px}.content.mode-split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.assist-wrap{bottom:54px}.assist-bar input{font-size:13px}.zoom-controls{right:8px;bottom:60px}}
     @media(max-width:480px){:host{height:min(72vh,520px);min-height:380px}.scenes{top:auto;bottom:8px;transform:translateX(-50%)}.scenes button{padding:7px 10px}.sheet{padding:18px 16px max(18px,env(safe-area-inset-bottom))}}
   `;
 
@@ -329,6 +379,13 @@ export class HouseControlCard extends LitElement {
         ${this.assistantMessage ? html`<div class="assist-response" role="status">${this.assistantMessage}</div>` : ''}
         <label class="assist-bar"><span class="sparkle" aria-hidden="true">✨</span><input type="text" name="query" autocomplete="off" placeholder="Ask AI... (e.g. 'Make bedroom cozy', 'Turn off all ACs', 'Add a 4x3 balcony')" ?disabled=${this.promptBusy}><button type="submit" aria-label="Send prompt" ?disabled=${this.promptBusy}>${this.promptBusy?'…':'➔'}</button></label>
       </form>
+      ${this.activeMode !== '2d' ? html`
+        <div class="zoom-controls" role="toolbar" aria-label="3D Camera Controls">
+          <button title="Zoom in (+)" aria-label="Zoom in" @click=${() => this.zoom3D(-1)}>＋</button>
+          <button title="Zoom out (−)" aria-label="Zoom out" @click=${() => this.zoom3D(1)}>−</button>
+          <button title="Reset camera view" aria-label="Reset view" @click=${this.resetCamera3D}>⟲</button>
+        </div>
+      ` : ''}
       ${this.activeMode !== '2d' && plan.scenes?.length ? html`<nav class="scenes" aria-label="Lighting scenes">${plan.scenes.map((scene) => html`<button @click=${() => this.applyScene(scene)}>${scene.name}</button>`)}</nav>` : ''}
       ${this.hoveredFixture ? html`<div class="tooltip" style=${`left:${Math.min(this.hoveredFixture.x, (this.clientWidth || 400) - 220)}px;top:${Math.min(this.hoveredFixture.y, 80)}px`}><strong>${this.hoveredFixture.room} · ${this.hoveredFixture.name}</strong>${this.hoveredFixture.stateText}</div>` : ''}
       ${sheet ? html`<div class="veil" @click=${this.closeSheet}><section class="sheet" role="dialog" aria-modal="true" @click=${(e: Event) => e.stopPropagation()}>
@@ -347,14 +404,12 @@ export class HouseControlCard extends LitElement {
 
   private setupListeners(): void {
     if (!this.canvas) return;
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointercancel', this.onPointerUp);
+    this.removeListeners();
     this.canvas.addEventListener('pointerdown', this.onPointerDown);
     this.canvas.addEventListener('pointermove', this.onPointerMove);
     this.canvas.addEventListener('pointerup', this.onPointerUp);
     this.canvas.addEventListener('pointercancel', this.onPointerUp);
+    this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
   private removeListeners(): void {
@@ -363,6 +418,7 @@ export class HouseControlCard extends LitElement {
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
     this.canvas.removeEventListener('pointerup', this.onPointerUp);
     this.canvas.removeEventListener('pointercancel', this.onPointerUp);
+    this.canvas.removeEventListener('wheel', this.onWheel);
   }
 
   connectedCallback(): void {
