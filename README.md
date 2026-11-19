@@ -71,6 +71,88 @@ plan:
 
 ---
 
+## Configuring Your Home Layout
+
+The card generates 3D architecture, walls, openings, furniture, and fixtures dynamically using a procedural 3D engine. Users can configure their layout in two ways:
+
+### A. Interactive Card GUI Editor (No code needed)
+
+In Home Assistant, click **Edit Dashboard** → **Edit** on the card:
+
+1. **Room Footprint Editor**: Add rooms, customize dimensions in meters ($X$, $Z$, $\text{Width}$, $\text{Length}$), and select floor finishes (`oak`, `walnut`, `tile`, `stone`).
+2. **Entity Bindings Dropdown**: Home Assistant entities (`light.*`, `climate.*`) detected in your system appear in dropdown menus. Simply map each 3D fixture to your physical light or thermostat.
+3. **Add Devices**: Add new light fixtures (ceiling, spots, pendant, table lamps, LED strips) and AC units directly from the UI.
+
+### B. Lovelace YAML Configuration
+
+Power users can define or import custom layouts directly in the dashboard YAML:
+
+```yaml
+type: custom:house-control-card
+title: "Second Floor Flat"
+plan:
+  wallHeight: 2.6
+  interiorWallHeight: 1.25
+  rooms:
+    - id: living
+      name: "Living Room"
+      x: 0
+      y: 0
+      width: 5.5
+      length: 4.2
+      floor: oak
+    - id: bedroom
+      name: "Master Bedroom"
+      x: 5.5
+      y: 0
+      width: 4.0
+      length: 4.2
+      floor: walnut
+  openings:
+    - type: door
+      from: [5.5, 1.2]
+      to: [5.5, 2.1]
+      head: 2.1
+    - type: window
+      from: [0, 1.0]
+      to: [0, 2.8]
+      sill: 0.9
+  lights:
+    - id: living_chandelier
+      name: "Chandelier"
+      roomId: living
+      x: 2.75
+      y: 2.1
+      z: 2.4
+      fixture: pendant
+      capabilities: [brightness, temp]
+  acs:
+    - id: living_ac
+      name: "Living AC"
+      roomId: living
+      wall: north
+      x: 2.5
+      y: 2.2
+entities:
+  lights:
+    living_chandelier: light.living_room_ceiling
+  climates:
+    living_ac: climate.living_room_hvac
+```
+
+---
+
+## How the Procedural 3D Engine Adapts
+
+When a custom layout is provided:
+
+- **Automatic Camera Framing**: The engine calculates the total 3D bounding box of all configured rooms and automatically positions the isometric camera and directional shadow frustum to fit the home.
+- **Dynamic Cut-Away Walls**: Exterior walls facing the user's camera automatically drop to an interior partition height ($1.25\text{m}$) so you can see inside all rooms regardless of camera rotation.
+- **Parametric Openings**: Doors and windows dynamically slice into room walls at exact coordinates with sills and lintels.
+- **Lighting & Physics Placement**: Point lights, spotlights, and AC airflow particle systems are anchored to their relative room coordinates ($x, y, z$).
+
+---
+
 ## Visual editor and tablet controls
 
 Open the card's **Show visual editor** panel to configure room footprints and positions in metres, add furniture/light/climate fixtures, and bind fixtures to entities discovered from Home Assistant. The advanced plan editor accepts the full JSON `plan` schema. Changes are emitted as Lovelace `config-changed` events and saved through the dashboard editor.
