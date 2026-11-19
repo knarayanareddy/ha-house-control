@@ -1,7 +1,7 @@
 {
   "name": "ha-house-control",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interactive procedural 3D smart-home floor plan card for Home Assistant dashboards",
   "type": "module",
   "scripts": {

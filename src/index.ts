@@ -9,6 +9,9 @@ import type { Plan } from './types';
 import { HABridge, type HassLike } from './bridge/ha-bridge';
 import * as THREE from 'three';
 
+declare global { interface Window { HOUSE_CONTROL_VERSION?: string } }
+if (typeof window !== 'undefined') window.HOUSE_CONTROL_VERSION = '0.2.0';
+
 export interface HouseControlCardConfig {
   type: string;
   title?: string;
@@ -17,9 +20,13 @@ export interface HouseControlCardConfig {
 }
 
 export class HouseControlCard extends LitElement {
+  private activeSheet?: { kind: 'light'|'climate'; id: string; entityId: string };
+  private hoveredFixture?: { kind: 'light'|'climate'; id: string; entityId: string; name: string; room: string; stateText: string; x: number; y: number };
   static properties = {
     hass: { attribute: false },
     config: { attribute: false },
+    activeSheet: { state: true },
+    hoveredFixture: { state: true },
   };
 
   declare hass: HassLike;
@@ -35,6 +42,34 @@ export class HouseControlCard extends LitElement {
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private canvas?: HTMLCanvasElement;
+  private fixtureFor(hit?: THREE.Intersection) {
+    const object = hit?.object; const data = object?.userData;
+    if (!data?.entityId) return undefined;
+    const kind = data.kind === 'climate' ? 'climate' : 'light';
+    const unit = kind === 'light' ? this.world?.lighting.units.find((u) => u.entityId === data.entityId || u.config.id === data.entityId) : this.world?.acs.units.find((u) => u.entityId === data.entityId || u.config.id === data.entityId);
+    return unit ? { kind, id: unit.config.id, entityId: unit.entityId, name: unit.config.name, room: unit.config.room } as const : undefined;
+  }
+  private updateHover(event: PointerEvent) {
+    if (!this.canvas || !this.world || this.gesture.size) return;
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.pointer, this.world.camera);
+    const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
+    const f = this.fixtureFor(hit);
+    const oldId = this.hoveredFixture?.entityId;
+    if (oldId !== f?.entityId) {
+      this.world.lighting.highlight(f?.kind === 'light' ? f.entityId : undefined);
+      this.world.acs.highlight(f?.kind === 'climate' ? f.entityId : undefined);
+      this.world.requestRender(2);
+    }
+    this.canvas.style.cursor = f ? 'pointer' : 'grab';
+    if (f) {
+      const state = this.bridge?.state(f.entityId) ?? { on: false, brightness: 0, mode: 'off' };
+      const stateText = f.kind === 'light' ? (state.on ? `${Math.round((state.brightness ?? 1) * 100)}%` : 'Off') : `${state.mode ?? 'off'}${state.target ? ` · ${state.target}°` : ''}`;
+      this.hoveredFixture = { ...f, stateText, x: event.clientX - rect.left, y: event.clientY - rect.top };
+    } else this.hoveredFixture = undefined;
+  }
+
   private onPointerDown = (event: PointerEvent) => {
     if (!this.canvas || !this.world) return;
     this.canvas.setPointerCapture(event.pointerId);
@@ -43,16 +78,7 @@ export class HouseControlCard extends LitElement {
     this.lastGesture = this.measureGesture();
   };
   private onPointerMove = (event: PointerEvent) => {
-    if (!this.gesture.has(event.pointerId) || !this.world) {
-      if (this.canvas && this.world) {
-        const rect = this.canvas.getBoundingClientRect();
-        this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-        this.raycaster.setFromCamera(this.pointer, this.world.camera);
-        const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
-        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
-      }
-      return;
-    }
+    if (!this.gesture.has(event.pointerId) || !this.world) { this.updateHover(event); return; }
     this.gesture.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const current = this.measureGesture();
     if (!this.lastGesture || !current) return;
@@ -87,10 +113,8 @@ export class HouseControlCard extends LitElement {
     this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.world.camera);
     const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
-    if (hit) {
-      this.bridge.toggle(hit.object.userData.entityId);
-      this.world.requestRender(60);
-    }
+    const fixture = this.fixtureFor(hit);
+    if (fixture) { this.activeSheet = fixture; this.hoveredFixture = undefined; this.requestUpdate(); }
   };
   private measureGesture() {
     const points = [...this.gesture.values()];
@@ -108,7 +132,12 @@ export class HouseControlCard extends LitElement {
       height: 480px;
       border-radius: 16px;
       overflow: hidden;
+      position: relative;
+      background: #0a0e1a;
+      color: #f7f8fc;
+      font-family: system-ui, sans-serif;
     }
+    .stage { position:absolute; inset:0; }
     canvas {
       width: 100%;
       height: 100%;
@@ -117,6 +146,14 @@ export class HouseControlCard extends LitElement {
       user-select: none;
       -webkit-user-select: none;
     }
+    .scenes{position:absolute;z-index:2;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;max-width:calc(100% - 20px);overflow:auto;padding:5px;border-radius:16px;background:#101727bb;backdrop-filter:blur(12px)}
+    .scenes button,.close,.power,.step button,.mode button,.fan button{border:1px solid #ffffff25;background:#ffffff12;color:inherit;border-radius:999px;padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap}.scenes button:hover,.mode button.selected,.fan button.selected{background:#5578b899;border-color:#8fb4ff}
+    .tooltip{position:absolute;z-index:3;pointer-events:none;transform:translate(12px,12px);padding:8px 11px;border:1px solid #ffffff25;border-radius:10px;background:#111827dd;backdrop-filter:blur(10px);font-size:12px;box-shadow:0 8px 30px #0006}.tooltip strong{display:block}
+    .veil{position:absolute;inset:0;z-index:5;background:#02040a66;backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center}
+    .sheet{width:min(420px,100%);max-height:88%;overflow:auto;box-sizing:border-box;padding:20px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #ffffff24;border-bottom:0;border-radius:24px 24px 0 0;background:linear-gradient(145deg,#222c40f2,#101622f5);box-shadow:0 -14px 50px #0008;backdrop-filter:blur(18px);animation:rise .18s ease-out}
+    @keyframes rise{from{transform:translateY(24px);opacity:.5}to{transform:translateY(0);opacity:1}}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.sheet-head h3{margin:0;font-size:19px}.subtle{color:#aab5c9;font-size:12px;margin-top:3px}.close{font-size:20px;padding:4px 11px}.control{display:grid;gap:8px;margin:16px 0}.control label{display:flex;justify-content:space-between;color:#dce3ef;font-size:13px}.control input[type=range]{width:100%;accent-color:#88aaff;min-height:32px}.power{background:#ffffff18}.power.on{background:#5278bc}.swatches{display:flex;gap:9px;flex-wrap:wrap}.swatches button{width:29px;height:29px;border-radius:50%;border:2px solid #ffffff70;cursor:pointer}.step{display:flex;align-items:center;justify-content:center;gap:24px;margin:12px}.step output{font-size:42px;font-variant-numeric:tabular-nums}.step button{width:48px;height:48px;font-size:24px;padding:0}.mode,.fan{display:flex;gap:6px;flex-wrap:wrap}.climate-meta{text-align:center;color:#bdc7d8;font-size:13px}
+    @media(max-width:480px){:host{height: min(72vh,520px);min-height:380px}.scenes{top:auto;bottom:8px;transform:translateX(-50%)}.scenes button{padding:7px 10px}.sheet{padding:18px 16px max(18px,env(safe-area-inset-bottom))}}
   `;
 
   public setConfig(config: HouseControlCardConfig): void {
@@ -133,8 +170,39 @@ export class HouseControlCard extends LitElement {
     return { type: 'custom:house-control-card', plan: samplePlan };
   }
 
+  private closeSheet() { this.activeSheet = undefined; }
+  private applyScene(scene: NonNullable<Plan['scenes']>[number]) { this.bridge?.applyScene(scene); this.world?.requestRender(90); this.requestUpdate(); }
+  private setLightPower(id: string, on: boolean) { this.bridge?.setLightPower(id,on); this.world?.requestRender(60); }
+  private changeBrightness(id: string, value: number) { this.bridge?.setBrightness(id,value); this.world?.requestRender(60); }
   protected render() {
-    return html`<canvas id="view"></canvas>`;
+    const plan = this.config?.plan ?? samplePlan as unknown as Plan;
+    const sheet = this.activeSheet;
+    const light = sheet?.kind === 'light' ? this.world?.lighting.units.find((u) => u.config.id === sheet.id) : undefined;
+    const ac = sheet?.kind === 'climate' ? this.world?.acs.units.find((u) => u.config.id === sheet.id) : undefined;
+    const entityState = sheet ? this.bridge?.state(sheet.entityId) ?? { on: false, brightness: 1, mode: 'off' } : undefined;
+    const climateHa = sheet?.kind === 'climate' ? this.hass?.states?.[sheet.entityId]?.attributes : undefined;
+    const brightness = Math.round((entityState?.brightness ?? 1) * 100);
+    const target = entityState?.target ?? (Number(climateHa?.temperature) || 22);
+    const current = entityState?.current ?? (Number(climateHa?.current_temperature) || 24);
+    const kelvin = entityState?.kelvin ?? (Number(this.hass?.states?.[sheet?.entityId ?? '']?.attributes?.color_temp_kelvin) || 4000);
+    const roomName = sheet ? plan.rooms.find((r) => r.id === (light?.config.room ?? ac?.config.room))?.name ?? (light?.config.room ?? ac?.config.room) : '';
+    const colors = ['#ff5a4f','#ff9a3c','#ffd84a','#5fe08a','#42d6e8','#4f8dff','#8b5cff','#ff5fc4'];
+    return html`<div class="stage">
+      <canvas id="view"></canvas>
+      ${plan.scenes?.length ? html`<nav class="scenes" aria-label="Lighting scenes">${plan.scenes.map((scene) => html`<button @click=${() => this.applyScene(scene)}>${scene.name}</button>`)}</nav>` : ''}
+      ${this.hoveredFixture ? html`<div class="tooltip" style=${`left:${Math.min(this.hoveredFixture.x, (this.clientWidth || 400) - 220)}px;top:${Math.min(this.hoveredFixture.y, 80)}px`}><strong>${this.hoveredFixture.room} · ${this.hoveredFixture.name}</strong>${this.hoveredFixture.stateText}</div>` : ''}
+      ${sheet ? html`<div class="veil" @click=${this.closeSheet}><section class="sheet" role="dialog" aria-modal="true" @click=${(e: Event) => e.stopPropagation()}>
+        <header class="sheet-head"><div><h3>${light?.config.name ?? ac?.config.name}</h3><div class="subtle">${roomName} · ${sheet.entityId}</div></div><button class="close" aria-label="Close" @click=${this.closeSheet}>×</button></header>
+        ${light ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => this.setLightPower(sheet.entityId,!entityState?.on)}>${entityState?.on ? '● On' : '○ Off'}</button>
+          <div class="control"><label>Brightness <span>${brightness}%</span></label><input aria-label="Brightness" type="range" min="0" max="100" .value=${String(brightness)} @input=${(e: Event) => this.changeBrightness(sheet.entityId,Number((e.target as HTMLInputElement).value))}></div>
+          ${light.config.capabilities.includes('temp') ? html`<div class="control"><label>Color temperature <span>${Math.round(kelvin)} K</span></label><input aria-label="Color temperature" type="range" min="2200" max="6500" step="100" .value=${String(kelvin)} @input=${(e: Event) => { this.bridge?.setKelvin(sheet.entityId,Number((e.target as HTMLInputElement).value)); this.world?.requestRender(50); }}><div class="hint">2200 K · Candle　　4000 K · Neutral　　6500 K · Daylight</div></div>` : ''}
+          ${light.config.capabilities.includes('color') ? html`<div class="control"><label>Color</label><div class="swatches">${colors.map((color) => html`<button style=${`background:${color}`} aria-label=${color} @click=${() => { this.bridge?.setLightColor(sheet.entityId,color); this.world?.requestRender(50); }}></button>`)}</div></div>` : ''}` : ''}
+        ${ac ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => { this.bridge?.setClimatePower(sheet.entityId,!entityState?.on); this.world?.requestRender(60); }}>${entityState?.on ? '● On' : '○ Off'}</button>
+          <div class="climate-meta">Current temperature · ${current}°</div><div class="step"><button aria-label="Decrease target temperature" @click=${() => this.bridge?.setTemperature(sheet.entityId,Number(target)-1)}>−</button><output>${Number(target).toFixed(1)}°</output><button aria-label="Increase target temperature" @click=${() => this.bridge?.setTemperature(sheet.entityId,Number(target)+1)}>+</button></div>
+          <div class="control"><label>HVAC mode</label><div class="mode">${['cool','heat','fan','dry','auto','off'].map((mode) => html`<button class=${entityState?.mode === mode ? 'selected':''} @click=${() => { this.bridge?.setClimateMode(sheet.entityId,mode); this.world?.requestRender(60); }}>${mode[0].toUpperCase()+mode.slice(1)}</button>`)}</div></div>
+          <div class="control"><label>Fan speed</label><div class="fan">${['auto','low','medium','high','turbo'].map((fan) => html`<button class=${entityState?.fan === fan ? 'selected':''} @click=${() => this.bridge?.setFanMode(sheet.entityId,fan)}>${fan}</button>`)}</div></div>` : ''}
+      </section></div>` : ''}
+    </div>`;
   }
 
   protected firstUpdated(): void {
@@ -150,7 +218,7 @@ export class HouseControlCard extends LitElement {
   private mountWorld() {
     if (!this.canvas) return;
     this.world?.dispose();
-    const plan = this.config?.plan ?? (samplePlan as Plan);
+    const plan = this.config?.plan ?? (samplePlan as unknown as Plan);
     this.world = createWorld(this.canvas, normalizePlan(plan), { entities: this.config?.entities });
     this.cameraTarget.set((normalizePlan(plan).bounds.minX + normalizePlan(plan).bounds.maxX) / 2, 1, (normalizePlan(plan).bounds.minZ + normalizePlan(plan).bounds.maxZ) / 2);
     this.bridge = new HABridge(this.world.lighting, this.world.acs, this.config?.entities, () => this.world?.requestRender(20));

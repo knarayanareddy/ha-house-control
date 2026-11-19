@@ -17,6 +17,7 @@ export interface RoomDef {
   floor?: FloorKind;
   /** Per-side wall override; defaults to "solid". */
   walls?: Partial<Record<WallSide, WallKind>>;
+  rect?: [number, number, number, number];
 }
 
 export interface OpeningDef {
@@ -34,8 +35,10 @@ export interface OpeningDef {
 export interface FurnitureDef {
   type: string;
   roomId?: string;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
+  pos?: [number, number];
+  rot?: number;
   /** Degrees, clockwise seen from above. */
   rotation?: number;
   [key: string]: unknown;
@@ -43,28 +46,42 @@ export interface FurnitureDef {
 
 export interface LightDef {
   id: string;
-  roomId: string;
-  x: number;
-  y: number;
-  z: number;
+  roomId?: string;
+  room?: string;
+  name?: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  pos?: [number, number];
   fixture?: string;
+  type?: string;
+  rot?: number;
+  length?: number;
+  capabilities?: string[];
 }
 
 export interface AcDef {
   id: string;
-  roomId: string;
+  roomId?: string;
+  room?: string;
+  name?: string;
   wall: WallSide;
-  x: number;
+  x?: number;
   y: number;
+  pos?: [number, number];
 }
 
 export interface Plan {
   name?: string;
+  wallHeight?: number;
+  interiorWallHeight?: number;
+  scenes?: Array<{ id: string; name: string; icon?: string; lights?: Record<string, { on?: boolean; brightness?: number; temp?: number; color?: string }>; acs?: Record<string, { on?: boolean }> }>;
   outdoorTemp?: number;
   camera?: { azimuth?: number; elevation?: number };
   rooms: RoomDef[];
   doors?: OpeningDef[];
   windows?: OpeningDef[];
+  openings?: NormOpening[];
   furniture?: FurnitureDef[];
   lights?: LightDef[];
   acs?: AcDef[];
@@ -103,6 +120,9 @@ export type LightFixture = 'ceiling' | 'pendant' | 'spots' | 'floor' | 'table' |
 
 export interface NormLight {
   id: string;
+  name: string;
+  room: string;
+  capabilities: string[];
   pos: [number, number];
   /** Fixture height, metres. */
   y: number;
@@ -114,6 +134,8 @@ export interface NormLight {
 
 export interface NormAc {
   id: string;
+  name: string;
+  room: string;
   pos: [number, number];
   /** Mounting height, metres. */
   y: number;
@@ -130,5 +152,6 @@ export interface NormConfig {
   furniture: NormFurniture[];
   lightUnits: NormLight[];
   acUnits: NormAc[];
+  scenes: NonNullable<Plan['scenes']>;
   bounds: { minX: number; minZ: number; maxX: number; maxZ: number };
 }
