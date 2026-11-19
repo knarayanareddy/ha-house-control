@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HA House Control — 1-2 Minute Master Showcase</title>
+<script type="module" src="/local/house-control-card-v6.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: #070a12;
+    color: #f1f5f9;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    position: relative;
+    user-select: none;
+  }
+
+  /* Ambient SaaS aura & grid */
+  .bg-aura {
+    position: absolute;
+    width: 1300px;
+    height: 900px;
+    background: radial-gradient(circle, rgba(37,99,235,0.16) 0%, rgba(14,165,233,0.06) 45%, rgba(7,10,18,0) 75%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-grid {
+    position: absolute;
+    inset: 0;
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Header bar */
+  .header-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    padding: 0 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 50;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .brand-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 18px;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .mode-pill {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(96,165,250,0.3);
+    color: #93c5fd;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 10px #38bdf8;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+  /* Timeline / chapter progress bar */
+  .timeline-bar {
+    position: absolute;
+    top: 71px;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+    z-index: 60;
+    transition: width 0.1s linear;
+  }
+
+  /* View container */
+  .main-stage {
+    position: absolute;
+    top: 72px;
+    bottom: 84px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 48px;
+  }
+
+  /* Intro Screen */
+  .intro-card {
+    text-align: center;
+    max-width: 1100px;
+    animation: fadeIn 0.8s ease-out;
+  }
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    background: rgba(37,99,235,0.12);
+    border: 1px solid rgba(96,165,250,0.3);
+    color: #93c5fd;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .hero-title {
+    font-size: 64px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+  .hero-gradient {
+    background: linear-gradient(135deg, #60a5fa, #38bdf8, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 24px;
+    color: #94a3b8;
+    line-height: 1.5;
+    max-width: 820px;
+    margin: 0 auto 40px;
+  }
+  .feature-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  .feature-box {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e2e8f0;
+  }
+
+  /* 2D Editor Container */
+  .editor-wrapper {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: stretch;
+  }
+  .canvas-panel {
+    background: #0f1523;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .canvas-header {
+    height: 48px;
+    padding: 0 20px;
+    background: #171f30;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+  .canvas-header .tools {
+    display: flex;
+    gap: 8px;
+  }
+  .tool-tag {
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #202b40;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .tool-tag.active {
+    background: #2563eb;
+    border-color: #60a5fa;
+    color: #fff;
+  }
+  .canvas-body {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Inspector panel */
+  .inspector-panel {
+    background: #0f1523;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .inspector-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+  }
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .field-value {
+    background: #192233;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  /* Split View (2D on Left + 3D on Right) */
+  .split-wrapper {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: stretch;
+  }
+  .split-card {
+    background: #0f1523;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  }
+  .split-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 20;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    font-size: 12px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Full 3D View */
+  .full-3d-wrapper {
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  }
+  house-control-card {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Outro Card */
+  .outro-card {
+    text-align: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  /* Bottom Caption / Feature Bar */
+  .bottom-caption-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 84px;
+    padding: 0 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 14, 26, 0.88);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 50;
+  }
+  .caption-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .chapter-pill {
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #0284c7);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .caption-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.01em;
+  }
+  .caption-sub {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-left: 12px;
+  }
+  .stats-badges {
+    display: flex;
+    gap: 14px;
+  }
+  .stat-pill {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  /* Software Virtual Mouse Cursor */
+  #cursor {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-2px, -2px);
+    transition: transform 0.05s linear;
+  }
+  #cursor svg {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+  }
+  .click-ripple {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #38bdf8;
+    transform: translate(-18px, -18px) scale(0);
+    opacity: 1;
+    pointer-events: none;
+    z-index: 9998;
+    animation: ripple 0.5s ease-out forwards;
+  }
+  @keyframes ripple {
+    0% { transform: translate(-18px, -18px) scale(0); opacity: 1; }
+    100% { transform: translate(-18px, -18px) scale(1.6); opacity: 0; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-aura"></div>
+<div class="bg-grid"></div>
+
+<!-- Header -->
+<header class="header-bar">
+  <div class="brand">
+    <div class="brand-logo">3D</div>
+    <span>HA House Control</span>
+    <span style="color:#64748b; font-weight:400; font-size:18px;">/</span>
+    <span style="color:#94a3b8; font-size:16px; font-weight:600;" id="header-subtitle">2D Floor Plan to 3D Digital Twin</span>
+  </div>
+  <div class="header-right">
+    <div class="mode-pill" id="mode-badge">
+      <span class="pulse-dot"></span>
+      <span id="mode-text">Hero Showcase</span>
+    </div>
+  </div>
+</header>
+
+<!-- Timeline bar -->
+<div class="timeline-bar" id="timeline-progress"></div>
+
+<!-- Main Interactive Stage -->
+<main class="main-stage" id="stage-container">
+  <!-- Dynamic Views injected here by state machine -->
+</main>
+
+<!-- Bottom Caption Bar -->
+<footer class="bottom-caption-bar">
+  <div class="caption-content">
+    <div class="chapter-pill" id="chapter-label">Chapter 1</div>
+    <div class="caption-text" id="caption-main">Draw your floor plan — it builds itself in 3D.</div>
+    <div class="caption-sub" id="caption-secondary">Zero CAD modeling required. Fully integrated into Home Assistant.</div>
+  </div>
+  <div class="stats-badges" id="caption-badges">
+    <div class="stat-pill">5 Rooms</div>
+    <div class="stat-pill">11 Fixtures</div>
+    <div class="stat-pill">2 AC Units</div>
+    <div class="stat-pill">Local Three.js</div>
+  </div>
+</footer>
+
+<!-- Software Animated Cursor -->
+<div id="cursor">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path d="M5.5 3.2L18.8 12.3C19.7 12.9 19.3 14.3 18.2 14.3H12.9L10.3 20.9C9.9 21.8 8.7 22.1 8 21.5L6.5 20.3C5.8 19.7 5.7 18.6 6.2 17.8L8.7 12.2H4.2C3.1 12.2 2.5 10.9 3.3 10.2L5.5 3.2Z" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<script type="module">
+  const stage = document.getElementById('stage-container');
+  const cursor = document.getElementById('cursor');
+  const progressBar = document.getElementById('timeline-progress');
+  const modeText = document.getElementById('mode-text');
+  const chapterLabel = document.getElementById('chapter-label');
+  const captionMain = document.getElementById('caption-main');
+  const captionSecondary = document.getElementById('caption-secondary');
+
+  // Reliable timer-based cursor animation (immune to rAF compositor stalls)
+  function moveCursor(x, y, duration = 800) {
+    return new Promise((resolve) => {
+      const startX = parseFloat(cursor.dataset.x || 960);
+      const startY = parseFloat(cursor.dataset.y || 540);
+      const startTime = Date.now();
+      const timer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        const curX = startX + (x - startX) * ease;
+        const curY = startY + (y - startY) * ease;
+        cursor.style.left = `${curX}px`;
+        cursor.style.top = `${curY}px`;
+        cursor.dataset.x = curX;
+        cursor.dataset.y = curY;
+        if (progress >= 1) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 16);
+    });
+  }
+
+  function clickCursor() {
+    return new Promise((resolve) => {
+      const x = parseFloat(cursor.dataset.x || 960);
+      const y = parseFloat(cursor.dataset.y || 540);
+      const ripple = document.createElement('div');
+      ripple.className = 'click-ripple';
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      document.body.appendChild(ripple);
+      setTimeout(() => {
+        ripple.remove();
+        resolve();
+      }, 400);
+    });
+  }
+
+  // 1-2 Minute Master Timeline Director
+  async function runDirector() {
+    await customElements.whenDefined('house-control-card');
+    await customElements.whenDefined('floorplan-canvas');
+
+    const totalSeconds = 110;
+    const startTime = performance.now();
+    const timer = setInterval(() => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      const pct = Math.min(100, (elapsed / totalSeconds) * 100);
+      progressBar.style.width = `${pct}%`;
+      if (pct >= 100) clearInterval(timer);
+    }, 100);
+
+    /* ========================================================
+       ACT 1: INTRO / HOOK HERO (0s - 12s)
+       ======================================================== */
+    chapterLabel.innerText = 'Introduction';
+    modeText.innerText = 'Product Overview';
+    captionMain.innerText = 'Draw your floor plan — it builds itself in 3D.';
+    captionSecondary.innerText = 'Interactive 3D Digital Twin for Home Assistant with zero CAD modeling required.';
+
+    stage.innerHTML = `
+      <div class="intro-card">
+        <div class="hero-pill">✨ Instant Procedural Architecture</div>
+        <h1 class="hero-title">
+          Your Entire Home as an<br><span class="hero-gradient">Interactive 3D Digital Twin</span>
+        </h1>
+        <p class="hero-sub">
+          Draw your walls, doors, and lights in 2D. Watch them rise instantly into a live, hardware-accelerated 3D environment linked directly to your Home Assistant entities.
+        </p>
+        <div class="feature-row">
+          <div class="feature-box">📐 2D Drag-to-Sketch Studio</div>
+          <div class="feature-box">⚡ Instant Procedural 3D Engine</div>
+          <div class="feature-box">💡 Real-Time Physical Lumens</div>
+          <div class="feature-box">🔒 100% Local & Private</div>
+        </div>
+      </div>
+    `;
+    await moveCursor(960, 500, 1500);
+    await new Promise((r) => setTimeout(r, 6500));
+
+    /* ========================================================
+       ACT 2: 2D FLOOR PLAN SKETCHING (12s - 34s)
+       ======================================================== */
+    chapterLabel.innerText = '2D Sketcher';
+    modeText.innerText = '2D Architectural Canvas';
+    captionMain.innerText = 'Interactive 2D drag-to-sketch floor plan canvas.';
+    captionSecondary.innerText = '0.1m snapping, room bounds, wall-aligned doors & windows, and device placement.';
+
+    stage.innerHTML = `
+      <div class="editor-wrapper">
+        <div class="canvas-panel">
+          <div class="canvas-header">
+            <span>Architectural Grid · 0.1m Snapping</span>
+            <div class="tools">
+              <span class="tool-tag active">Select & Resize</span>
+              <span class="tool-tag">+ Room</span>
+              <span class="tool-tag">+ Door</span>
+              <span class="tool-tag">+ Window</span>
+              <span class="tool-tag">+ Light</span>
+            </div>
+          </div>
+          <div class="canvas-body" id="canvas-container">
+            <floorplan-canvas id="fp-canvas"></floorplan-canvas>
+          </div>
+        </div>
+        <div class="inspector-panel">
+          <div class="inspector-title">Room Inspector</div>
+          <div class="field-group">
+            <div class="field-label">Selected Room</div>
+            <div class="field-value" id="insp-room-name">Living Room</div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Dimensions</div>
+            <div class="field-value" id="insp-room-dim">5.50 m × 4.20 m (23.1 m²)</div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Floor Finish</div>
+            <div class="field-value" id="insp-room-floor">Natural Oak Parquet</div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Fixtures & Devices</div>
+            <div class="field-value">3 Lights · 1 AC Unit</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const fpCanvas = document.getElementById('fp-canvas');
+    // Fetch default plan
+    const defaultPlan = {
+      wallHeight: 2.6,
+      interiorWallHeight: 1.25,
+      rooms: [
+        { id: 'living', name: 'Living Room', x: 0, y: 0, width: 5.5, length: 4.2, floor: 'oak' },
+        { id: 'bedroom', name: 'Master Bedroom', x: 5.5, y: 0, width: 4.0, length: 4.2, floor: 'walnut' },
+        { id: 'dining', name: 'Dining Room', x: 0, y: 4.2, width: 3.5, length: 3.8, floor: 'oak' },
+        { id: 'kitchen', name: 'Kitchen', x: 3.5, y: 4.2, width: 3.5, length: 3.8, floor: 'tile' },
+        { id: 'bath', name: 'Bathroom', x: 7.0, y: 4.2, width: 2.5, length: 3.8, floor: 'stone' }
+      ],
+      openings: [
+        { type: 'door', from: [5.5, 1.2], to: [5.5, 2.1], sill: 0, head: 2.1 },
+        { type: 'door', from: [2.5, 4.2], to: [3.5, 4.2], sill: 0, head: 2.1 },
+        { type: 'window', from: [0, 1.0], to: [0, 2.8], sill: 0.9, head: 2.2 }
+      ],
+      lights: [
+        { id: 'living_chandelier', name: 'Chandelier', roomId: 'living', x: 2.75, y: 2.1, z: 2.4, fixture: 'pendant', capabilities: ['brightness', 'temp'] },
+        { id: 'living_spots', name: 'Spots', roomId: 'living', x: 4.5, y: 1.2, z: 2.5, fixture: 'spots', capabilities: ['brightness'] },
+        { id: 'bedroom_ceiling', name: 'Bedroom Ceiling', roomId: 'bedroom', x: 7.5, y: 2.1, z: 2.4, fixture: 'ceiling', capabilities: ['brightness', 'temp', 'color'] }
+      ],
+      acs: [
+        { id: 'bedroom_ac', name: 'Bedroom AC', roomId: 'bedroom', wall: 'north', x: 2.0, y: 2.2 }
+      ],
+      furniture: [
+        { type: 'sofa', x: 2.5, z: 2.8, rotation: 0 },
+        { type: 'bed', x: 7.5, z: 2.2, rotation: 0 },
+        { type: 'diningSet', x: 1.8, z: 6.0, rotation: 0 }
+      ]
+    };
+    fpCanvas.plan = structuredClone(defaultPlan);
+
+    // Animate cursor moving to living room
+    await moveCursor(480, 360, 1000);
+    await clickCursor();
+
+    // Drag wall resize animation
+    const inspDim = document.getElementById('insp-room-dim');
+    await moveCursor(620, 360, 800);
+    await clickCursor();
+    // Simulate expanding the room
+    for (let w = 5.5; w <= 6.3; w += 0.1) {
+      inspDim.innerText = `${w.toFixed(2)} m × 4.20 m (${(w * 4.2).toFixed(1)} m²)`;
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    await moveCursor(1700, 380, 800);
+    document.getElementById('insp-room-floor').innerText = 'American Walnut';
+    await clickCursor();
+    await new Promise((r) => setTimeout(r, 1500));
+
+    /* ========================================================
+       ACT 3: REAL-TIME 2D TO 3D SPLIT SYNC (34s - 52s)
+       ======================================================== */
+    chapterLabel.innerText = 'Live Sync';
+    modeText.innerText = 'Split Screen Synchronization';
+    captionMain.innerText = 'Real-time procedural synchronization.';
+    captionSecondary.innerText = 'Watch the 3D twin update and rebuild dynamically as the 2D layout changes.';
+
+    stage.innerHTML = `
+      <div class="split-wrapper">
+        <div class="split-card">
+          <div class="split-badge">📐 2D Floor Plan Studio</div>
+          <div style="flex:1; width:100%; height:100%;">
+            <floorplan-canvas id="split-fp"></floorplan-canvas>
+          </div>
+        </div>
+        <div class="split-card">
+          <div class="split-badge">🏠 Live 3D Twin (Three.js)</div>
+          <div style="flex:1; width:100%; height:100%;">
+            <house-control-card id="split-card"></house-control-card>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const splitFp = document.getElementById('split-fp');
+    const splitCard = document.getElementById('split-card');
+    splitFp.plan = structuredClone(defaultPlan);
+    splitCard.setConfig({ type: 'custom:house-control-card', plan: defaultPlan });
+    await new Promise((r) => setTimeout(r, 600));
+    splitCard.applyScene({ id: 'warm', name: 'Warm Daylight', lights: { '*': { on: true, brightness: 0.95, temp: 3000 } } });
+    splitCard.world?.requestRender(20);
+
+    await moveCursor(450, 420, 1000);
+    await clickCursor();
+
+    // Demonstrate live 3D response to 2D room expansion
+    await moveCursor(640, 420, 800);
+    await clickCursor();
+    for (let dw = 0; dw < 6; dw++) {
+      await moveCursor(640 + dw * 15, 420, 150);
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+
+    /* ========================================================
+       ACT 4: 3D ORBITAL EXPLORATION & CUT-AWAY WALLS (52s - 70s)
+       ======================================================== */
+    chapterLabel.innerText = '3D Exploration';
+    modeText.innerText = 'Cinematic Camera & Cut-Away Walls';
+    captionMain.innerText = 'Dynamic cut-away walls with automatic camera line-of-sight.';
+    captionSecondary.innerText = 'Exterior walls facing the viewer drop to 1.25m partitions so all rooms remain visible.';
+
+    stage.innerHTML = `
+      <div class="full-3d-wrapper">
+        <house-control-card id="full-card"></house-control-card>
+      </div>
+    `;
+    const fullCard = document.getElementById('full-card');
+    fullCard.setConfig({ type: 'custom:house-control-card' });
+
+    // Wait for card to mount
+    await new Promise((r) => setTimeout(r, 1000));
+    fullCard.applyScene({ id: 'warm', name: 'Warm Daylight', lights: { '*': { on: true, brightness: 0.95, temp: 3000 } } });
+    fullCard.world?.requestRender(20);
+    const world = fullCard.world;
+
+    // Simulate mouse drag orbiting the camera smoothly 360 degrees
+    await moveCursor(960, 540, 600);
+    if (world) {
+      const origPos = world.camera.position.clone();
+      const target = fullCard.cameraTarget || { x: 5, y: 1, z: 4 };
+      const radius = Math.hypot(origPos.x - target.x, origPos.z - target.z);
+      for (let angle = 0; angle <= Math.PI * 1.5; angle += 0.12) {
+        const x = target.x + radius * Math.cos(angle + 0.8);
+        const z = target.z + radius * Math.sin(angle + 0.8);
+        world.camera.position.set(x, origPos.y, z);
+        world.camera.lookAt(target.x, target.y, target.z);
+        world.viewFromCamera();
+        world.requestRender(2);
+        await new Promise((r) => setTimeout(r, 40));
+      }
+    }
+    await new Promise((r) => setTimeout(r, 800));
+
+    /* ========================================================
+       ACT 5: PHYSICAL LIGHTING & SLIDERS (70s - 86s)
+       ======================================================== */
+    chapterLabel.innerText = 'Lighting Control';
+    modeText.innerText = 'Physical Lumens & Entity Sync';
+    captionMain.innerText = 'Interactive physical lighting with two-way Home Assistant sync.';
+    captionSecondary.innerText = 'Tap any 3D fixture to adjust real-time brightness, color temperature (Kelvin), or RGB swatches.';
+
+    // Move cursor to Living Room chandelier fixture
+    await moveCursor(760, 620, 800);
+    await clickCursor();
+
+    // Trigger fixture popover
+    fullCard.activeSheet = { kind: 'light', id: 'living.main', entityId: 'light.living_room_ceiling' };
+    fullCard.requestUpdate();
+    await new Promise((r) => setTimeout(r, 800));
+
+    // Drag brightness slider
+    await moveCursor(960, 880, 600);
+    await clickCursor();
+    for (let b = 30; b <= 100; b += 15) {
+      fullCard.changeBrightness('light.living_room_ceiling', b);
+      await moveCursor(960 + (b - 30) * 2, 880, 60);
+    }
+
+    // Drag Kelvin slider
+    await moveCursor(960, 940, 500);
+    for (let k = 2700; k <= 6500; k += 800) {
+      fullCard.changeKelvin('light.living_room_ceiling', k);
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    // Close sheet
+    await moveCursor(1140, 770, 500);
+    await clickCursor();
+    fullCard.activeSheet = undefined;
+    fullCard.requestUpdate();
+    await new Promise((r) => setTimeout(r, 600));
+
+    /* ========================================================
+       ACT 6: CLIMATE & AERODYNAMIC AIRFLOW (86s - 100s)
+       ======================================================== */
+    chapterLabel.innerText = 'Climate Simulation';
+    modeText.innerText = 'Dynamic Airflow & HVAC Modes';
+    captionMain.innerText = 'Mode-colored aerodynamic particle simulation.';
+    captionSecondary.innerText = 'Active cooling streams cyan particles; heating streams warm amber airflow.';
+
+    // Move cursor to Bedroom AC
+    await moveCursor(1140, 480, 800);
+    await clickCursor();
+
+    fullCard.activeSheet = { kind: 'climate', id: 'bedroom.ac', entityId: 'climate.bedroom_ac' };
+    fullCard.requestUpdate();
+    await new Promise((r) => setTimeout(r, 800));
+
+    // Step temperature down
+    await moveCursor(910, 850, 500);
+    await clickCursor();
+    fullCard.changeTemperature('climate.bedroom_ac', 22.0);
+    await clickCursor();
+    fullCard.changeTemperature('climate.bedroom_ac', 21.5);
+
+    // Switch to Cool mode and Turbo fan
+    fullCard.changeClimateMode('climate.bedroom_ac', 'cool');
+    fullCard.changeFanMode('climate.bedroom_ac', 'turbo');
+    await moveCursor(940, 910, 500);
+    await clickCursor();
+
+    // Close climate sheet
+    await moveCursor(1140, 750, 500);
+    await clickCursor();
+    fullCard.activeSheet = undefined;
+    fullCard.requestUpdate();
+    await new Promise((r) => setTimeout(r, 800));
+
+    /* ========================================================
+       ACT 7: ONE-TAP ATMOSPHERIC SCENES (100s - 114s)
+       ======================================================== */
+    chapterLabel.innerText = 'Lighting Scenes';
+    modeText.innerText = 'One-Tap Atmospheric Presets';
+    captionMain.innerText = 'One-tap lighting scenes transform the entire living space.';
+    captionSecondary.innerText = 'Switch seamlessly between Bright daylight, Movie night, and Cozy incandescent warmth.';
+
+    // Click Movie Scene
+    await moveCursor(1020, 160, 800);
+    await clickCursor();
+    fullCard.applyScene({
+      id: 'movie', name: 'Movie',
+      lights: { '*': { on: false }, 'living.tv': { on: true, brightness: 0.8, color: '#8b5cff' }, 'living.floor': { on: true, brightness: 0.2, temp: 2400 } }
+    });
+    await new Promise((r) => setTimeout(r, 2200));
+
+    // Click Cozy Scene
+    await moveCursor(950, 160, 600);
+    await clickCursor();
+    fullCard.applyScene({
+      id: 'cozy', name: 'Cozy',
+      lights: { '*': { on: false }, 'living.chandelier': { on: true, brightness: 0.5, temp: 2200 }, 'dining.pendant': { on: true, brightness: 0.6, temp: 2400 } }
+    });
+    await new Promise((r) => setTimeout(r, 2200));
+
+    // Click Bright Scene
+    await moveCursor(880, 160, 600);
+    await clickCursor();
+    fullCard.applyScene({
+      id: 'bright', name: 'Bright',
+      lights: { '*': { on: true, brightness: 1.0, temp: 4500 } }
+    });
+    await new Promise((r) => setTimeout(r, 2000));
+
+    /* ========================================================
+       ACT 7.5: FLOATING AI CHATBOT & ASSIST PROMPT BAR
+       ======================================================== */
+    chapterLabel.innerText = 'AI Assistant';
+    modeText.innerText = 'Natural Language Control & Procedural Layout';
+    captionMain.innerText = 'Floating AI Prompt Bar integrated with Home Assistant Assist.';
+    captionSecondary.innerText = 'Ask AI to adjust lighting moods or procedurally extrude new rooms into your 3D digital twin.';
+
+    // Move cursor to Assist prompt bar
+    await moveCursor(960, 930, 800);
+    await clickCursor();
+    const assistInput = fullCard.shadowRoot?.querySelector('.assist-bar input');
+    if (assistInput) {
+      assistInput.value = 'Add a 4x3 balcony to master bedroom';
+    }
+    fullCard.assistantMessage = 'Generated new Balcony footprint and updated 3D digital twin.';
+    fullCard.requestUpdate();
+    await moveCursor(1180, 930, 600);
+    await clickCursor();
+    await new Promise((r) => setTimeout(r, 2800));
+
+    /* ========================================================
+       ACT 8: OUTRO & CALL TO ACTION (114s - 124s)
+       ======================================================== */
+    chapterLabel.innerText = 'Open Source';
+    modeText.innerText = 'Install via HACS';
+    captionMain.innerText = 'HA House Control — Your entire home as a live 3D twin.';
+    captionSecondary.innerText = 'Available now on GitHub. Install directly via HACS Custom Repository.';
+
+    stage.innerHTML = `
+      <div class="outro-card">
+        <div style="width:80px; height:80px; border-radius:24px; background:linear-gradient(135deg, #3b82f6, #06b6d4); display:flex; align-items:center; justify-content:center; font-size:38px; margin:0 auto 28px; box-shadow:0 12px 35px rgba(37,99,235,0.45);">
+          🏠
+        </div>
+        <h2 style="font-size:56px; font-weight:800; letter-spacing:-0.035em; margin-bottom:20px; line-height:1.15;">
+          Experience Your Home in 3D.
+        </h2>
+        <p style="font-size:22px; color:#94a3b8; max-width:760px; line-height:1.5; margin:0 auto 36px;">
+          Zero CAD required. Draw your walls, bind your entities, and control your lights and climate in full procedural 3D.
+        </p>
+        <div style="display:inline-block; background:#0f172a; border:1px solid rgba(255,255,255,0.18); border-radius:18px; padding:18px 36px; font-family:'JetBrains Mono', monospace; font-size:20px; color:#38bdf8; margin-bottom:36px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+          github.com/knarayanareddy/ha-house-control
+        </div>
+        <div style="display:flex; justify-content:center; gap:20px;">
+          <div class="stat-pill" style="padding:10px 22px; font-size:15px;">📦 HACS Custom Repository</div>
+          <div class="stat-pill" style="padding:10px 22px; font-size:15px;">🔒 100% Local & Private</div>
+          <div class="stat-pill" style="padding:10px 22px; font-size:15px;">⚡ Three.js Hardware Accelerated</div>
+        </div>
+      </div>
+    `;
+    await moveCursor(960, 520, 1000);
+    await new Promise((r) => setTimeout(r, 8000));
+
+    console.log('SHOWCASE_COMPLETED');
+    window.__SHOWCASE_COMPLETED = true;
+  }
+
+  window.addEventListener('load', () => {
+    runDirector();
+  });
+</script>
+</body>
+</html>
