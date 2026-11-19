@@ -71,6 +71,28 @@ plan:
 
 ---
 
+## Visual editor and tablet controls
+
+Open the card's **Show visual editor** panel to configure room footprints and positions in metres, add furniture/light/climate fixtures, and bind fixtures to entities discovered from Home Assistant. The advanced plan editor accepts the full JSON `plan` schema. Changes are emitted as Lovelace `config-changed` events and saved through the dashboard editor.
+
+On touch devices, drag with one finger to orbit the model; use two fingers to zoom and pan. Tapping a bound light fixture toggles that Home Assistant light. Climate airflow follows the climate entity's active mode and stops when it is off.
+
+### Entity binding example
+
+Fixture IDs in `plan` are independent of Home Assistant entity IDs. Bind them explicitly when editing YAML, or choose entities in the visual editor:
+
+```yaml
+entities:
+  lights:
+    ceiling_fixture: light.living_room
+  climates:
+    living_room_ac: climate.living_room
+```
+
+For development, run `npm ci`, `npm run typecheck`, `npm run build`, and `npm run verify`. Version tags (`v*`) trigger the release workflow, which typechecks, builds, verifies, and attaches `dist/house-control-card.js` to the GitHub release for HACS.
+
+---
+
 ## Acknowledgements
 
 - Based on the 3D procedural engine and visual design of [0xProbabillity/house-control](https://github.com/0xProbabillity/house-control).
