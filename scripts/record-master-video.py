@@ -7,7 +7,7 @@ import shutil
 RECORD_DIR = "/tmp/master_video_raw"
 FFMPEG = "/Users/brightech/.gemini/antigravity/bin/ffmpeg"
 OUTPUT_MP4 = "/Users/brightech/.gemini/antigravity/scratch/ha-house-control/ha-house-control-demo.mp4"
-ARTIFACT_MP4 = "/Users/brightech/.gemini/antigravity/brain/417c1ab2-286e-4726-862a-10065eb04b62/ha-house-control-demo.mp4"
+ARTIFACT_MP4 = "/Users/brightech/.gemini/antigravity/brain/122ddc74-a10f-49ff-8c2f-dda7ac1d5f69/ha-house-control-demo.mp4"
 
 # Clean up raw recording dir
 if os.path.exists(RECORD_DIR):
