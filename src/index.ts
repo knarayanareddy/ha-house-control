@@ -114,7 +114,13 @@ export class HouseControlCard extends LitElement {
     this.raycaster.setFromCamera(this.pointer, this.world.camera);
     const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
     const fixture = this.fixtureFor(hit);
-    if (fixture) { this.activeSheet = fixture; this.hoveredFixture = undefined; this.requestUpdate(); }
+    if (fixture) {
+      this.bridge.toggle(fixture.entityId);
+      this.activeSheet = fixture;
+      this.hoveredFixture = undefined;
+      this.world.requestRender(60);
+      this.requestUpdate();
+    }
   };
   private measureGesture() {
     const points = [...this.gesture.values()];
@@ -147,12 +153,17 @@ export class HouseControlCard extends LitElement {
       -webkit-user-select: none;
     }
     .scenes{position:absolute;z-index:2;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;max-width:calc(100% - 20px);overflow:auto;padding:5px;border-radius:16px;background:#101727bb;backdrop-filter:blur(12px)}
-    .scenes button,.close,.power,.step button,.mode button,.fan button{border:1px solid #ffffff25;background:#ffffff12;color:inherit;border-radius:999px;padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap}.scenes button:hover,.mode button.selected,.fan button.selected{background:#5578b899;border-color:#8fb4ff}
+    .scenes button,.close,.power,.step button,.mode button,.fan button{border:1px solid #ffffff25;background:#ffffff12;color:inherit;border-radius:999px;padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap;user-select:none}.scenes button:hover,.mode button.selected,.fan button.selected{background:#3b82f6;border-color:#60a5fa;color:#fff}
     .tooltip{position:absolute;z-index:3;pointer-events:none;transform:translate(12px,12px);padding:8px 11px;border:1px solid #ffffff25;border-radius:10px;background:#111827dd;backdrop-filter:blur(10px);font-size:12px;box-shadow:0 8px 30px #0006}.tooltip strong{display:block}
-    .veil{position:absolute;inset:0;z-index:5;background:#02040a66;backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center}
-    .sheet{width:min(420px,100%);max-height:88%;overflow:auto;box-sizing:border-box;padding:20px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #ffffff24;border-bottom:0;border-radius:24px 24px 0 0;background:linear-gradient(145deg,#222c40f2,#101622f5);box-shadow:0 -14px 50px #0008;backdrop-filter:blur(18px);animation:rise .18s ease-out}
+    .veil{position:absolute;inset:0;z-index:10;background:#02040a66;backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center;cursor:default}
+    .sheet{position:relative;z-index:11;width:min(420px,100%);max-height:88%;overflow:auto;box-sizing:border-box;padding:20px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #ffffff24;border-bottom:0;border-radius:24px 24px 0 0;background:linear-gradient(145deg,#1e2638f8,#0e1420fc);box-shadow:0 -14px 50px #00000099;backdrop-filter:blur(18px);animation:rise .18s ease-out}
     @keyframes rise{from{transform:translateY(24px);opacity:.5}to{transform:translateY(0);opacity:1}}
-    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.sheet-head h3{margin:0;font-size:19px}.subtle{color:#aab5c9;font-size:12px;margin-top:3px}.close{font-size:20px;padding:4px 11px}.control{display:grid;gap:8px;margin:16px 0}.control label{display:flex;justify-content:space-between;color:#dce3ef;font-size:13px}.control input[type=range]{width:100%;accent-color:#88aaff;min-height:32px}.power{background:#ffffff18}.power.on{background:#5278bc}.swatches{display:flex;gap:9px;flex-wrap:wrap}.swatches button{width:29px;height:29px;border-radius:50%;border:2px solid #ffffff70;cursor:pointer}.step{display:flex;align-items:center;justify-content:center;gap:24px;margin:12px}.step output{font-size:42px;font-variant-numeric:tabular-nums}.step button{width:48px;height:48px;font-size:24px;padding:0}.mode,.fan{display:flex;gap:6px;flex-wrap:wrap}.climate-meta{text-align:center;color:#bdc7d8;font-size:13px}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.sheet-head h3{margin:0;font-size:19px}.subtle{color:#aab5c9;font-size:12px;margin-top:3px}
+    .close{font-size:22px;line-height:1;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;padding:0}.close:hover{background:#ffffff33;border-color:#ffffff66}
+    .control{display:grid;gap:8px;margin:16px 0}.control label{display:flex;justify-content:space-between;color:#dce3ef;font-size:13px}.control input[type=range]{width:100%;accent-color:#60a5fa;min-height:32px;cursor:pointer}
+    .power{width:100%;padding:10px 16px;font-size:14px;font-weight:600;border-radius:12px;transition:background .15s, border-color .15s}.power.on{background:#2563eb;border-color:#60a5fa;color:#ffffff;box-shadow:0 0 16px #3b82f655}
+    .swatches{display:flex;gap:9px;flex-wrap:wrap}.swatches button{width:29px;height:29px;border-radius:50%;border:2px solid #ffffff70;cursor:pointer}
+    .step{display:flex;align-items:center;justify-content:center;gap:24px;margin:12px}.step output{font-size:42px;font-variant-numeric:tabular-nums}.step button{width:48px;height:48px;font-size:24px;padding:0}.mode,.fan{display:flex;gap:6px;flex-wrap:wrap}.climate-meta{text-align:center;color:#bdc7d8;font-size:13px}
     @media(max-width:480px){:host{height: min(72vh,520px);min-height:380px}.scenes{top:auto;bottom:8px;transform:translateX(-50%)}.scenes button{padding:7px 10px}.sheet{padding:18px 16px max(18px,env(safe-area-inset-bottom))}}
   `;
 
@@ -170,10 +181,60 @@ export class HouseControlCard extends LitElement {
     return { type: 'custom:house-control-card', plan: samplePlan };
   }
 
-  private closeSheet() { this.activeSheet = undefined; }
-  private applyScene(scene: NonNullable<Plan['scenes']>[number]) { this.bridge?.applyScene(scene); this.world?.requestRender(90); this.requestUpdate(); }
-  private setLightPower(id: string, on: boolean) { this.bridge?.setLightPower(id,on); this.world?.requestRender(60); }
-  private changeBrightness(id: string, value: number) { this.bridge?.setBrightness(id,value); this.world?.requestRender(60); }
+  private closeSheet = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    this.activeSheet = undefined;
+    this.requestUpdate();
+  };
+  private applyScene = (scene: NonNullable<Plan['scenes']>[number]) => {
+    this.bridge?.applyScene(scene);
+    this.world?.requestRender(90);
+    this.requestUpdate();
+  };
+  private setLightPower = (id: string, on: boolean) => {
+    this.bridge?.setLightPower(id, on);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeBrightness = (id: string, value: number) => {
+    this.bridge?.setBrightness(id, value);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeKelvin = (id: string, value: number) => {
+    this.bridge?.setKelvin(id, value);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeColor = (id: string, color: string) => {
+    this.bridge?.setLightColor(id, color);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private setClimatePower = (id: string, on: boolean) => {
+    this.bridge?.setClimatePower(id, on);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeTemperature = (id: string, value: number) => {
+    this.bridge?.setTemperature(id, value);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeClimateMode = (id: string, mode: string) => {
+    this.bridge?.setClimateMode(id, mode);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+  private changeFanMode = (id: string, fan: string) => {
+    this.bridge?.setFanMode(id, fan);
+    this.world?.requestRender(60);
+    this.requestUpdate();
+  };
+
   protected render() {
     const plan = this.config?.plan ?? samplePlan as unknown as Plan;
     const sheet = this.activeSheet;
@@ -193,14 +254,14 @@ export class HouseControlCard extends LitElement {
       ${this.hoveredFixture ? html`<div class="tooltip" style=${`left:${Math.min(this.hoveredFixture.x, (this.clientWidth || 400) - 220)}px;top:${Math.min(this.hoveredFixture.y, 80)}px`}><strong>${this.hoveredFixture.room} · ${this.hoveredFixture.name}</strong>${this.hoveredFixture.stateText}</div>` : ''}
       ${sheet ? html`<div class="veil" @click=${this.closeSheet}><section class="sheet" role="dialog" aria-modal="true" @click=${(e: Event) => e.stopPropagation()}>
         <header class="sheet-head"><div><h3>${light?.config.name ?? ac?.config.name}</h3><div class="subtle">${roomName} · ${sheet.entityId}</div></div><button class="close" aria-label="Close" @click=${this.closeSheet}>×</button></header>
-        ${light ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => this.setLightPower(sheet.entityId,!entityState?.on)}>${entityState?.on ? '● On' : '○ Off'}</button>
-          <div class="control"><label>Brightness <span>${brightness}%</span></label><input aria-label="Brightness" type="range" min="0" max="100" .value=${String(brightness)} @input=${(e: Event) => this.changeBrightness(sheet.entityId,Number((e.target as HTMLInputElement).value))}></div>
-          ${light.config.capabilities.includes('temp') ? html`<div class="control"><label>Color temperature <span>${Math.round(kelvin)} K</span></label><input aria-label="Color temperature" type="range" min="2200" max="6500" step="100" .value=${String(kelvin)} @input=${(e: Event) => { this.bridge?.setKelvin(sheet.entityId,Number((e.target as HTMLInputElement).value)); this.world?.requestRender(50); }}><div class="hint">2200 K · Candle　　4000 K · Neutral　　6500 K · Daylight</div></div>` : ''}
-          ${light.config.capabilities.includes('color') ? html`<div class="control"><label>Color</label><div class="swatches">${colors.map((color) => html`<button style=${`background:${color}`} aria-label=${color} @click=${() => { this.bridge?.setLightColor(sheet.entityId,color); this.world?.requestRender(50); }}></button>`)}</div></div>` : ''}` : ''}
-        ${ac ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => { this.bridge?.setClimatePower(sheet.entityId,!entityState?.on); this.world?.requestRender(60); }}>${entityState?.on ? '● On' : '○ Off'}</button>
-          <div class="climate-meta">Current temperature · ${current}°</div><div class="step"><button aria-label="Decrease target temperature" @click=${() => this.bridge?.setTemperature(sheet.entityId,Number(target)-1)}>−</button><output>${Number(target).toFixed(1)}°</output><button aria-label="Increase target temperature" @click=${() => this.bridge?.setTemperature(sheet.entityId,Number(target)+1)}>+</button></div>
-          <div class="control"><label>HVAC mode</label><div class="mode">${['cool','heat','fan','dry','auto','off'].map((mode) => html`<button class=${entityState?.mode === mode ? 'selected':''} @click=${() => { this.bridge?.setClimateMode(sheet.entityId,mode); this.world?.requestRender(60); }}>${mode[0].toUpperCase()+mode.slice(1)}</button>`)}</div></div>
-          <div class="control"><label>Fan speed</label><div class="fan">${['auto','low','medium','high','turbo'].map((fan) => html`<button class=${entityState?.fan === fan ? 'selected':''} @click=${() => this.bridge?.setFanMode(sheet.entityId,fan)}>${fan}</button>`)}</div></div>` : ''}
+        ${light ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => this.setLightPower(sheet.entityId, !entityState?.on)}>${entityState?.on ? '● On' : '○ Off'}</button>
+          <div class="control"><label>Brightness <span>${brightness}%</span></label><input aria-label="Brightness" type="range" min="0" max="100" .value=${String(brightness)} @input=${(e: Event) => this.changeBrightness(sheet.entityId, Number((e.target as HTMLInputElement).value))}></div>
+          ${light.config.capabilities.includes('temp') ? html`<div class="control"><label>Color temperature <span>${Math.round(kelvin)} K</span></label><input aria-label="Color temperature" type="range" min="2200" max="6500" step="100" .value=${String(kelvin)} @input=${(e: Event) => this.changeKelvin(sheet.entityId, Number((e.target as HTMLInputElement).value))}><div class="hint">2200 K · Candle　　4000 K · Neutral　　6500 K · Daylight</div></div>` : ''}
+          ${light.config.capabilities.includes('color') ? html`<div class="control"><label>Color</label><div class="swatches">${colors.map((color) => html`<button style=${`background:${color}`} aria-label=${color} @click=${() => this.changeColor(sheet.entityId, color)}></button>`)}</div></div>` : ''}` : ''}
+        ${ac ? html`<button class="power ${entityState?.on ? 'on':''}" @click=${() => this.setClimatePower(sheet.entityId, !entityState?.on)}>${entityState?.on ? '● On' : '○ Off'}</button>
+          <div class="climate-meta">Current temperature · ${current}°</div><div class="step"><button aria-label="Decrease target temperature" @click=${() => this.changeTemperature(sheet.entityId, Number(target) - 1)}>−</button><output>${Number(target).toFixed(1)}°</output><button aria-label="Increase target temperature" @click=${() => this.changeTemperature(sheet.entityId, Number(target) + 1)}>+</button></div>
+          <div class="control"><label>HVAC mode</label><div class="mode">${['cool','heat','fan','dry','auto','off'].map((mode) => html`<button class=${entityState?.mode === mode ? 'selected':''} @click=${() => this.changeClimateMode(sheet.entityId, mode)}>${mode[0].toUpperCase()+mode.slice(1)}</button>`)}</div></div>
+          <div class="control"><label>Fan speed</label><div class="fan">${['auto','low','medium','high','turbo'].map((fan) => html`<button class=${entityState?.fan === fan ? 'selected':''} @click=${() => this.changeFanMode(sheet.entityId, fan)}>${fan}</button>`)}</div></div>` : ''}
       </section></div>` : ''}
     </div>`;
   }
@@ -221,7 +282,10 @@ export class HouseControlCard extends LitElement {
     const plan = this.config?.plan ?? (samplePlan as unknown as Plan);
     this.world = createWorld(this.canvas, normalizePlan(plan), { entities: this.config?.entities });
     this.cameraTarget.set((normalizePlan(plan).bounds.minX + normalizePlan(plan).bounds.maxX) / 2, 1, (normalizePlan(plan).bounds.minZ + normalizePlan(plan).bounds.maxZ) / 2);
-    this.bridge = new HABridge(this.world.lighting, this.world.acs, this.config?.entities, () => this.world?.requestRender(20));
+    this.bridge = new HABridge(this.world.lighting, this.world.acs, this.config?.entities, () => {
+      this.world?.requestRender(30);
+      this.requestUpdate();
+    });
     if (this.hass) this.bridge.setHass(this.hass);
   }
 
