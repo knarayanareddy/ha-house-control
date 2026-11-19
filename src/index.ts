@@ -22,11 +22,13 @@ export interface HouseControlCardConfig {
 export class HouseControlCard extends LitElement {
   private activeSheet?: { kind: 'light'|'climate'; id: string; entityId: string };
   private hoveredFixture?: { kind: 'light'|'climate'; id: string; entityId: string; name: string; room: string; stateText: string; x: number; y: number };
+  private renderError?: string;
   static properties = {
     hass: { attribute: false },
     config: { attribute: false },
     activeSheet: { state: true },
     hoveredFixture: { state: true },
+    renderError: { state: true },
   };
 
   declare hass: HassLike;
@@ -139,11 +141,15 @@ export class HouseControlCard extends LitElement {
       border-radius: 16px;
       overflow: hidden;
       position: relative;
-      background: #0a0e1a;
+      background: #0a0e1a !important;
       color: #f7f8fc;
       font-family: system-ui, sans-serif;
     }
-    .stage { position:absolute; inset:0; }
+    .stage { position:absolute; inset:0; background:#0a0e1a; }
+    .error-box { display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; box-sizing:border-box; }
+    .error-box strong { font-size:16px; margin-bottom:6px; display:block; color:#f87171; }
+    .retry-btn { margin-top:14px; padding:8px 20px; border-radius:999px; background:#3b82f6; border:1px solid #60a5fa; color:#fff; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+    .retry-btn:hover { background:#2563eb; }
     canvas {
       width: 100%;
       height: 100%;
@@ -179,6 +185,10 @@ export class HouseControlCard extends LitElement {
 
   public static getStubConfig() {
     return { type: 'custom:house-control-card', plan: samplePlan };
+  }
+
+  public getCardSize(): number {
+    return 6;
   }
 
   private closeSheet = (e?: Event) => {
@@ -236,6 +246,16 @@ export class HouseControlCard extends LitElement {
   };
 
   protected render() {
+    if (this.renderError) {
+      return html`<div class="stage error-box">
+        <div>
+          <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
+          <strong>WebGL Initialization Issue</strong>
+          <p style="font-size:12px;opacity:0.85;max-width:320px;margin:8px auto;line-height:1.4;">${this.renderError}</p>
+          <button class="retry-btn" @click=${() => this.mountWorld()}>Retry 3D Stage</button>
+        </div>
+      </div>`;
+    }
     const plan = this.config?.plan ?? samplePlan as unknown as Plan;
     const sheet = this.activeSheet;
     const light = sheet?.kind === 'light' ? this.world?.lighting.units.find((u) => u.config.id === sheet.id) : undefined;
@@ -278,15 +298,23 @@ export class HouseControlCard extends LitElement {
 
   private mountWorld() {
     if (!this.canvas) return;
-    this.world?.dispose();
-    const plan = this.config?.plan ?? (samplePlan as unknown as Plan);
-    this.world = createWorld(this.canvas, normalizePlan(plan), { entities: this.config?.entities });
-    this.cameraTarget.set((normalizePlan(plan).bounds.minX + normalizePlan(plan).bounds.maxX) / 2, 1, (normalizePlan(plan).bounds.minZ + normalizePlan(plan).bounds.maxZ) / 2);
-    this.bridge = new HABridge(this.world.lighting, this.world.acs, this.config?.entities, () => {
-      this.world?.requestRender(30);
+    try {
+      this.world?.dispose();
+      const plan = this.config?.plan ?? (samplePlan as unknown as Plan);
+      this.world = createWorld(this.canvas, normalizePlan(plan), { entities: this.config?.entities });
+      this.cameraTarget.set((normalizePlan(plan).bounds.minX + normalizePlan(plan).bounds.maxX) / 2, 1, (normalizePlan(plan).bounds.minZ + normalizePlan(plan).bounds.maxZ) / 2);
+      this.bridge = new HABridge(this.world.lighting, this.world.acs, this.config?.entities, () => {
+        this.world?.requestRender(30);
+        this.requestUpdate();
+      });
+      if (this.hass) this.bridge.setHass(this.hass);
+      this.renderError = undefined;
+      this.world.requestRender(10);
+    } catch (err) {
+      console.error('HouseControl: Error initializing 3D stage', err);
+      this.renderError = err instanceof Error ? err.message : String(err);
       this.requestUpdate();
-    });
-    if (this.hass) this.bridge.setHass(this.hass);
+    }
   }
 
   protected updated(changed: Map<PropertyKey, unknown>): void {

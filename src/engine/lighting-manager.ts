@@ -51,8 +51,7 @@ export class LightUnit {
     this.group.add(body);
     this.light = new THREE.PointLight(0xffffff, 0, 7, 2);
     this.light.position.set(0, config.y || 1.5, 0);
-    this.light.castShadow = true;
-    this.light.shadow.mapSize.set(512, 512);
+    this.light.castShadow = false;
     this.group.add(this.light);
     const hit = new THREE.Mesh(new THREE.SphereGeometry(.6, 12, 10), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
     hit.position.y = config.y || 1.5;

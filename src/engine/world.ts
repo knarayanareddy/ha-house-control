@@ -31,7 +31,7 @@ export interface WorldHandle {
 }
 
 export function createWorld(canvas: HTMLCanvasElement, config: NormConfig, opts: WorldOptions = {}): WorldHandle {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'default' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -56,7 +56,7 @@ export function createWorld(canvas: HTMLCanvasElement, config: NormConfig, opts:
   const moon = new THREE.DirectionalLight(0xa9c0ff, 1.1);
   moon.position.set((minX + maxX) / 2 + 4, 10, (minZ + maxZ) / 2 - 4);
   moon.castShadow = true;
-  moon.shadow.mapSize.set(2048, 2048);
+  moon.shadow.mapSize.set(1024, 1024);
   const sc = moon.shadow.camera;
   sc.left = sc.bottom = -span * 0.85;
   sc.right = sc.top = span * 0.85;
@@ -141,7 +141,6 @@ export function createWorld(canvas: HTMLCanvasElement, config: NormConfig, opts:
         if (material) (Array.isArray(material) ? material : [material]).forEach((m) => m.dispose());
       });
       renderer.dispose();
-      renderer.forceContextLoss();
     },
   };
 }
