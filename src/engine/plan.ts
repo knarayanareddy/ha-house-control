@@ -74,47 +74,46 @@ export function normalizePlan(plan: Plan): NormConfig {
   if (!plan || !Array.isArray(plan.rooms) || plan.rooms.length === 0) {
     throw new PlanError('Plan needs at least one room in "rooms"');
   }
-  const wallHeight = plan.rooms.find((r) => r.height != null)?.height ?? 2.8;
+  const wallHeight = plan.wallHeight ?? plan.rooms.find((r) => r.height != null)?.height ?? 2.8;
 
   const rooms: NormRoom[] = plan.rooms.map((r) => {
-    if (!(r.width > 0 && r.length > 0)) throw new PlanError(`Room "${r.id}" has an empty rect`);
-    return {
-      id: r.id,
-      name: r.name || r.id,
-      x: r.x,
-      z: r.y,
-      w: r.width,
-      d: r.length,
-      floor: r.floor || 'oak',
-    };
+    const [x, z, w, d] = r.rect ?? [r.x, r.y, r.width, r.length];
+    if (!(w > 0 && d > 0)) throw new PlanError(`Room "${r.id}" has an empty rect`);
+    return { id: r.id, name: r.name || r.id, x, z, w, d, floor: r.floor || 'oak' };
   });
   const roomMap = new Map(plan.rooms.map((r) => [r.id, r]));
 
-  const openings: NormOpening[] = [];
-  for (const room of plan.rooms) openings.push(...sideOpenings(room));
+  const openings: NormOpening[] = [...(plan.openings ?? [])];
+  for (const room of plan.rooms) if (!room.rect) openings.push(...sideOpenings(room));
   for (const d of plan.doors ?? []) openings.push(openingFromDef(d, roomMap, 'door'));
   for (const w of plan.windows ?? []) openings.push(openingFromDef(w, roomMap, 'window'));
 
   const furniture: NormFurniture[] = (plan.furniture ?? []).map((f) => ({
     ...f,
-    y: 0, // vertical offset: the plan's `y` is the floor's z axis, not height
-    pos: [f.x, f.y] as [number, number],
-    rot: f.rotation ?? 0,
+    y: 0,
+    pos: f.pos ?? [f.x ?? 0, f.y ?? 0],
+    rot: f.rot ?? f.rotation ?? 0,
   }));
 
   const fixtureMap: Record<string, LightFixture> = { ceiling: 'ceiling', pendant: 'pendant', ceiling_pendant: 'pendant', spots: 'spots', floor: 'floor', floor_lamp: 'floor', table: 'table', table_lamp: 'table', strip: 'strip', lamp: 'table' };
-  const lightUnits: NormLight[] = (plan.lights ?? []).map((l) => ({ id: l.id, pos: [l.x, l.y], y: l.z, type: fixtureMap[l.fixture ?? 'pendant'] ?? 'pendant', rot: 0 }));
+  const lightUnits: NormLight[] = (plan.lights ?? []).map((l) => {
+    const type = fixtureMap[l.type ?? l.fixture ?? 'pendant'] ?? 'pendant';
+    const pos = l.pos ?? [l.x ?? 0, l.y ?? 0];
+    return { id: l.id, name: l.name ?? l.id, room: l.room ?? l.roomId ?? '', capabilities: l.capabilities ?? ['brightness'], pos, y: l.z ?? l.y ?? (type === 'ceiling' || type === 'spots' ? wallHeight - .15 : type === 'floor' ? 1.4 : type === 'table' ? .5 : type === 'strip' ? 1.4 : 1.8), type, rot: l.rot ?? 0, length: l.length };
+  });
   const acUnits: NormAc[] = (plan.acs ?? []).map((a) => {
-    const room = roomMap.get(a.roomId);
-    if (!room) throw new PlanError(`AC "${a.id}" refers to unknown room "${a.roomId}"`);
+    const roomId = a.room ?? a.roomId ?? '';
+    const room = rooms.find((r) => r.id === roomId);
+    if (!room) throw new PlanError(`AC "${a.id}" refers to unknown room "${roomId}"`);
     let pos: [number, number];
-    switch (a.wall) {
-      case 'north': pos = [room.x + a.x, room.y]; break;
-      case 'south': pos = [room.x + a.x, room.y + room.length]; break;
-      case 'west': pos = [room.x, room.y + a.x]; break;
-      case 'east': pos = [room.x + room.width, room.y + a.x]; break;
+    if (a.pos) pos = a.pos;
+    else switch (a.wall) {
+      case 'north': pos = [room.x + (a.x ?? 0), room.z]; break;
+      case 'south': pos = [room.x + (a.x ?? 0), room.z + room.d]; break;
+      case 'west': pos = [room.x, room.z + (a.x ?? 0)]; break;
+      case 'east': pos = [room.x + room.w, room.z + (a.x ?? 0)]; break;
     }
-    return { id: a.id, pos, y: a.y, wall: a.wall };
+    return { id: a.id, name: a.name ?? a.id, room: roomId, pos, y: a.y, wall: a.wall };
   });
 
   const minX = Math.min(...rooms.map((r) => r.x));
@@ -125,13 +124,14 @@ export function normalizePlan(plan: Plan): NormConfig {
   return {
     name: plan.name || 'Home',
     wallHeight,
-    interiorWallHeight: Math.min(1.25, wallHeight),
+    interiorWallHeight: Math.min(plan.interiorWallHeight ?? 1.25, wallHeight),
     camera: { azimuth: plan.camera?.azimuth ?? 34, elevation: plan.camera?.elevation ?? 47 },
     rooms,
     openings,
     furniture,
     lightUnits,
     acUnits,
+    scenes: plan.scenes ?? [],
     bounds: { minX, minZ, maxX, maxZ },
   };
 }

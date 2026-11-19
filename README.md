@@ -36,7 +36,7 @@ For the comprehensive implementation plan, reference analysis of `0xProbabillity
 1. Download `house-control-card.js` from the [Releases](https://github.com/knarayanareddy/ha-house-control/releases) page.
 2. Place it into your Home Assistant directory under `config/www/house-control-card.js`.
 3. Add the resource in **Settings** > **Dashboards** > **Resources**:
-   - URL: `/local/house-control-card.js`
+   - URL: `/local/house-control-card.js?v=0.2.0` (version query forces Home Assistant/browser cache refresh)
    - Type: `JavaScript Module`
 
 ---

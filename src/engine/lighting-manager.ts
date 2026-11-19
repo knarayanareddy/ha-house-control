@@ -22,6 +22,7 @@ export class LightUnit {
   private goalColor = new THREE.Color('#ffbd7a');
   private color = this.goalColor.clone();
   private glow: THREE.MeshStandardMaterial;
+  private highlighted = false;
   constructor(readonly config: NormLight, entityId = config.id) {
     this.entityId = entityId;
     this.group.position.set(config.pos[0], 0, config.pos[1]);
@@ -58,6 +59,7 @@ export class LightUnit {
     hit.userData = { kind: 'light', entityId };
     this.group.add(hit);
   }
+  setHighlighted(value: boolean) { this.highlighted = value; this.glow.emissiveIntensity = this.level * 2 + (value ? .7 : 0); }
   apply(state: LightSnapshot) {
     this.goal = state.on ? THREE.MathUtils.clamp(state.brightness, 0, 1) : 0;
     this.goalColor = state.color ? new THREE.Color(state.color) : state.colorTempKelvin ? kelvinToColor(state.colorTempKelvin) : this.goalColor;
@@ -69,7 +71,7 @@ export class LightUnit {
     this.light.intensity = this.level * 12;
     this.light.color.copy(this.color);
     this.glow.emissive.copy(this.color);
-    this.glow.emissiveIntensity = this.level * 2;
+    this.glow.emissiveIntensity = this.level * 2 + (this.highlighted ? .7 : 0);
     return Math.abs(this.goal - this.level) > .005;
   }
 }
@@ -81,5 +83,6 @@ export class LightingManager {
     this.units.forEach((u) => this.group.add(u.group));
   }
   apply(id: string, state: LightSnapshot) { this.units.find((u) => u.entityId === id || u.config.id === id)?.apply(state); }
+  highlight(id: string | undefined) { this.units.forEach((u) => u.setHighlighted(!!id && (u.entityId === id || u.config.id === id))); }
   update(dt: number) { return this.units.reduce((anim, u) => u.update(dt) || anim, false); }
 }

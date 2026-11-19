@@ -3,7 +3,7 @@ import type { NormAc } from '../types';
 import { box, mat, at } from './kit';
 
 const MODE_COLOR: Record<string, number> = { cool: 0x54c7ff, heat: 0xff8c3a, dry: 0x62e0cf, fan: 0xcfdcff, auto: 0x9bd28a };
-export interface ClimateSnapshot { on: boolean; mode: string; currentTemperature?: number; temperature?: number; }
+export interface ClimateSnapshot { on: boolean; mode: string; currentTemperature?: number; temperature?: number; fan?: string; }
 export class ACUnit {
   readonly group = new THREE.Group();
   readonly entityId: string;
@@ -14,7 +14,10 @@ export class ACUnit {
   private power = 0;
   private goal = 0;
   private phase = 0;
+  private fanSpeed = 1;
   private temps?: { current?: number; target?: number };
+  private highlighted = false;
+  setHighlighted(value: boolean) { this.highlighted = value; this.group.scale.setScalar(value ? 1.04 : 1); }
   constructor(readonly config: NormAc, entityId = config.id) {
     this.entityId = entityId;
     this.group.position.set(config.pos[0], config.y, config.pos[1]);
@@ -43,6 +46,7 @@ export class ACUnit {
     this.goal = state.on ? 1 : 0;
     this.goalColor.setHex(MODE_COLOR[state.mode] ?? MODE_COLOR.auto);
     this.temps = { current: state.currentTemperature, target: state.temperature };
+    this.fanSpeed = ({ auto: .55, low: .35, medium: .65, high: 1, turbo: 1.4 } as Record<string, number>)[state.fan ?? 'auto'] ?? .55;
   }
   update(dt: number) {
     this.phase += dt;
@@ -50,7 +54,7 @@ export class ACUnit {
     this.color.lerp(this.goalColor, 1 - Math.exp(-dt * 5));
     const attr = this.flow.geometry.getAttribute('position') as THREE.BufferAttribute;
     for (let i = 0; i < this.positions.length / 3; i++) {
-      const t = (i / (this.positions.length / 3) + this.phase * .48) % 1;
+      const t = (i / (this.positions.length / 3) + this.phase * .48 * this.fanSpeed) % 1;
       this.positions[i * 3] = Math.sin(i * 12.37 + this.phase) * (.08 + t * .45);
       this.positions[i * 3 + 1] = -t * 1.25;
       this.positions[i * 3 + 2] = t * 1.55;
@@ -70,5 +74,6 @@ export class AcSimulator {
     this.units.forEach((u) => this.group.add(u.group));
   }
   apply(id: string, state: ClimateSnapshot) { this.units.find((u) => u.entityId === id || u.config.id === id)?.apply(state); }
+  highlight(id: string | undefined) { this.units.forEach((u) => u.setHighlighted(!!id && (u.entityId === id || u.config.id === id))); }
   update(dt: number) { return this.units.reduce((anim, u) => u.update(dt) || anim, false); }
 }

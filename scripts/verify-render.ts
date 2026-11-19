@@ -1,6 +1,5 @@
-// Milestone 1 verification: builds the sample plan's scene headlessly, checks the
-// scene graph is well-formed, rasterizes it on the CPU, and writes the proof image
-// to dist/verify/sample-room.png. Exits non-zero if the room does not render cleanly.
+// Remediation verification: build the complete apartment headlessly, validate
+// room/device counts, rasterize the multi-room scene, and save a proof PNG.
 import * as THREE from 'three';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -20,7 +19,7 @@ const check = (ok: boolean, msg: string) => {
 
 /* ---------- build the scene ---------- */
 
-const config = normalizePlan(samplePlan as Plan);
+const config = normalizePlan(samplePlan as unknown as Plan);
 const { scene, house } = buildScene(config);
 
 let meshCount = 0;
@@ -38,6 +37,9 @@ scene.traverse((o) => {
 check(meshCount > 20, `scene contains meshes (${meshCount})`);
 check(finite, 'all vertex positions are finite (no NaN/Inf geometry)');
 check(house.floors.length === config.rooms.length, `one floor mesh per room (${house.floors.length})`);
+check(config.rooms.length >= 5, `multi-room plan has at least five rooms (${config.rooms.length})`);
+check(config.lightUnits.length >= 8, `plan has at least eight light fixtures (${config.lightUnits.length})`);
+check(config.acUnits.length >= 2, `plan has at least two AC units (${config.acUnits.length})`);
 
 // Exclude invisible raycast hit proxies: they extend above/beyond the physical
 // fixtures by design and are interaction targets, not rendered room geometry.
@@ -56,7 +58,7 @@ check(
 );
 
 // Furniture from the plan actually landed in the scene.
-const expectedTypes = new Set((samplePlan as Plan).furniture!.map((f) => f.type));
+const expectedTypes = new Set((samplePlan as unknown as Plan).furniture!.map((f) => f.type));
 check(expectedTypes.size > 0, `plan declares furniture (${[...expectedTypes].join(', ')})`);
 
 /* ---------- rasterize ---------- */
@@ -75,7 +77,7 @@ const rgb = renderScene(scene, camera, W, H);
 const png = encodePng(rgb, W, H);
 const outDir = resolve(root, 'dist/verify');
 mkdirSync(outDir, { recursive: true });
-const outFile = resolve(outDir, 'sample-room.png');
+const outFile = resolve(outDir, 'multi-room.png');
 writeFileSync(outFile, png);
 
 /* ---------- image sanity ---------- */
@@ -105,4 +107,4 @@ if (failures.length) {
   console.error(`\n${failures.length} check(s) failed`);
   process.exit(1);
 }
-console.log('\nAll checks passed: sample 3D room renders cleanly.');
+console.log('\nAll checks passed: multi-room apartment renders cleanly.');

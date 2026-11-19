@@ -7,13 +7,13 @@ interface EditorConfig { type: string; title?: string; plan?: Plan; entities?: {
 export class HouseControlCardEditor extends LitElement {
   static properties = { hass: { attribute: false }, _config: { state: true } };
   declare hass?: HassLike & { states: Record<string, { attributes: Record<string, unknown>; state: string }> };
-  private _config: EditorConfig = { type: 'custom:house-control-card', plan: sample as Plan };
+  private _config: EditorConfig = { type: 'custom:house-control-card', plan: sample as unknown as Plan };
   static styles = css`
     :host{display:block;font:14px/1.45 var(--primary-font-family,Arial,sans-serif);color:var(--primary-text-color,#222)}
     .wrap{display:grid;gap:14px}.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}label{display:grid;gap:4px}input,select,textarea,button{box-sizing:border-box;font:inherit;color:inherit;background:var(--card-background-color,#fff);border:1px solid var(--divider-color,#bbb);border-radius:6px;padding:8px;min-width:0}textarea{width:100%;min-height:150px;font-family:monospace}.section{border:1px solid var(--divider-color,#bbb);border-radius:8px;padding:12px}.rooms{display:grid;gap:8px}.room{display:grid;grid-template-columns:1fr repeat(4,minmax(58px,74px)) auto;align-items:end;gap:6px}.actions{display:flex;gap:8px;flex-wrap:wrap}button{cursor:pointer}.hint{opacity:.75;font-size:12px}
   `;
   setConfig(config: EditorConfig) { this._config = structuredClone(config); this.requestUpdate(); }
-  private plan(): Plan { return this._config.plan ?? ((sample as Plan)); }
+  private plan(): Plan { return this._config.plan ?? ((sample as unknown as Plan)); }
   private commit(next: EditorConfig) { this._config = next; this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: next }, bubbles: true, composed: true })); }
   private patchPlan(patch: Partial<Plan>) { this.commit({ ...this._config, plan: { ...this.plan(), ...patch } }); }
   private addRoom() {

@@ -5,7 +5,7 @@ import samplePlan from '../src/sample-plan.json';
 import type { Plan } from '../src/types';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
-const world = createWorld(canvas, normalizePlan(samplePlan as Plan));
+const world = createWorld(canvas, normalizePlan(samplePlan as unknown as Plan));
 
 // Expose for tinkering in devtools.
 (window as unknown as { world: unknown }).world = world;
