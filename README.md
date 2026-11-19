@@ -17,9 +17,10 @@ An interactive, procedural 3D smart home floor plan card for [Home Assistant](ht
 
 ---
 
-## Architecture & Implementation Blueprint
+## Architecture & Implementation Blueprints
 
-For the comprehensive implementation plan, reference analysis of `0xProbabillity/house-control`, entity integration contracts, and AI agent instructions, see [project.md](project.md).
+- **Core Architecture & HA Integration**: See [project.md](project.md) for reference analysis, Three.js pipeline, and service call contracts.
+- **Interactive 2D Drag-to-Sketch Floor Plan Canvas**: See [docs/2D_FLOORPLAN_EDITOR_SPEC.md](docs/2D_FLOORPLAN_EDITOR_SPEC.md) for the complete specification on porting the SVG visual floor plan sketcher from `0xProbabillity/house-control/web/src/editor/` into Home Assistant.
 
 ---
 
