@@ -11,6 +11,7 @@ const brightness = (value: unknown) => typeof value === 'number' ? Math.max(0, M
 export class HABridge {
   private hass?: HassLike;
   private previous = new Map<string, string>();
+  private localStates = new Map<string, { on: boolean; brightness?: number; mode?: string }>();
   constructor(private lights: LightingManager, private acs: AcSimulator, private bindings: EntityBindings = {}, private changed: () => void = () => {}) {}
   setHass(hass?: HassLike) { this.hass = hass; if (hass) this.updateEntities(hass.states); }
   updateEntities(states: Record<string, HassEntity>) {
@@ -24,7 +25,9 @@ export class HABridge {
       const a = e.attributes;
       const rgb = Array.isArray(a.rgb_color) ? `#${a.rgb_color.map((n: number) => Math.round(n).toString(16).padStart(2, '0')).join('')}` : undefined;
       const colorTempKelvin = Number(a.color_temp_kelvin) || (Number(a.color_temp) ? 1000000 / Number(a.color_temp) : undefined);
-      const snapshot: LightSnapshot = { on: e.state === 'on', brightness: brightness(a.brightness), color: rgb, colorTempKelvin };
+      const isOn = e.state === 'on';
+      this.localStates.set(entityId, { on: isOn, brightness: brightness(a.brightness) });
+      const snapshot: LightSnapshot = { on: isOn, brightness: brightness(a.brightness), color: rgb, colorTempKelvin };
       this.lights.apply(entityId, snapshot);
     }
     for (const unit of this.acs.units) {
@@ -34,14 +37,42 @@ export class HABridge {
       if (this.previous.get(entityId) === sig) continue;
       this.previous.set(entityId, sig); dirty = true;
       const a = e.attributes;
-      const snapshot: ClimateSnapshot = { on: e.state !== 'off' && e.state !== 'unavailable' && e.state !== 'unknown', mode: e.state, currentTemperature: a.current_temperature, temperature: a.temperature };
+      const isOn = e.state !== 'off' && e.state !== 'unavailable' && e.state !== 'unknown';
+      this.localStates.set(entityId, { on: isOn, mode: e.state });
+      const snapshot: ClimateSnapshot = { on: isOn, mode: e.state, currentTemperature: a.current_temperature, temperature: a.temperature };
       this.acs.apply(entityId, snapshot);
     }
     if (dirty) this.changed();
   }
   toggle(entityId: string) {
-    if (!this.hass || !entityId.startsWith('light.')) return;
-    void this.hass.callService('light', 'toggle', { entity_id: entityId });
+    const isLight = entityId.startsWith('light.') || this.lights.units.some(u => u.entityId === entityId || u.config.id === entityId);
+    if (isLight) {
+      const current = this.localStates.get(entityId) ?? { on: false };
+      const nextOn = !current.on;
+      this.localStates.set(entityId, { on: nextOn, brightness: 1 });
+      this.lights.apply(entityId, { on: nextOn, brightness: 1 });
+      this.changed();
+
+      if (this.hass && this.hass.states[entityId] && entityId.startsWith('light.')) {
+        void this.hass.callService('light', 'toggle', { entity_id: entityId });
+      }
+      return;
+    }
+
+    const isClimate = entityId.startsWith('climate.') || this.acs.units.some(u => u.entityId === entityId || u.config.id === entityId);
+    if (isClimate) {
+      const current = this.localStates.get(entityId) ?? { on: false };
+      const nextOn = !current.on;
+      const nextMode = nextOn ? 'cool' : 'off';
+      this.localStates.set(entityId, { on: nextOn, mode: nextMode });
+      this.acs.apply(entityId, { on: nextOn, mode: nextMode, temperature: 22, currentTemperature: 24 });
+      this.changed();
+
+      if (this.hass && this.hass.states[entityId] && entityId.startsWith('climate.')) {
+        void this.hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: nextMode });
+      }
+      return;
+    }
   }
   setBrightness(entityId: string, pct: number) {
     if (!this.hass || !entityId.startsWith('light.')) return;

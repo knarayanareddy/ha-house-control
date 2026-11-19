@@ -43,7 +43,16 @@ export class HouseControlCard extends LitElement {
     this.lastGesture = this.measureGesture();
   };
   private onPointerMove = (event: PointerEvent) => {
-    if (!this.gesture.has(event.pointerId) || !this.world) return;
+    if (!this.gesture.has(event.pointerId) || !this.world) {
+      if (this.canvas && this.world) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+        this.raycaster.setFromCamera(this.pointer, this.world.camera);
+        const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
+        this.canvas.style.cursor = hit ? 'pointer' : 'grab';
+      }
+      return;
+    }
     this.gesture.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const current = this.measureGesture();
     if (!this.lastGesture || !current) return;
@@ -72,12 +81,16 @@ export class HouseControlCard extends LitElement {
     this.gesture.delete(event.pointerId);
     this.gestureStart.delete(event.pointerId);
     this.lastGesture = this.measureGesture();
-    if (moved > 8 || this.gesture.size || !this.canvas || !this.world || !this.bridge) return;
+    if (this.canvas) this.canvas.style.cursor = 'grab';
+    if (moved > 12 || this.gesture.size || !this.canvas || !this.world || !this.bridge) return;
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.world.camera);
     const hit = this.raycaster.intersectObjects(this.world.scene.children, true).find((i) => i.object.userData.entityId);
-    if (hit) this.bridge.toggle(hit.object.userData.entityId);
+    if (hit) {
+      this.bridge.toggle(hit.object.userData.entityId);
+      this.world.requestRender(60);
+    }
   };
   private measureGesture() {
     const points = [...this.gesture.values()];

@@ -22,6 +22,11 @@ export class ACUnit {
     const body = new THREE.Group(); body.position.z = .2;
     body.add(at(box(.9, .28, .2, mat('#f3f4f6')), 0, -.14, 0));
     body.add(at(box(.78, .025, .04, mat('#262a30')), 0, -.25, .07));
+    body.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) {
+        o.userData = { kind: 'climate', entityId };
+      }
+    });
     this.group.add(body);
     const n = 42;
     this.positions = new Float32Array(n * 3);
@@ -31,7 +36,7 @@ export class ACUnit {
     this.flow.position.set(0, -.3, .34);
     this.flow.frustumCulled = false;
     this.group.add(this.flow);
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.2, .6, .6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.4, .8, .8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
     hit.position.set(0, -.15, .2); hit.userData = { kind: 'climate', entityId }; this.group.add(hit);
   }
   apply(state: ClimateSnapshot) {

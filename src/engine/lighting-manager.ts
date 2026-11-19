@@ -41,14 +41,19 @@ export class LightUnit {
       body.add(at(cyl(fixture === 'spots' ? .20 : .105, fixture === 'spots' ? .20 : .105, .035, this.glow, 24), 0, -.04, 0));
       if (fixture === 'pendant') body.add(at(cyl(.007, .007, .24, mat('#343741'), 8), 0, .14, 0));
     }
-    body.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).castShadow = false; });
+    body.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) {
+        (o as THREE.Mesh).castShadow = false;
+        o.userData = { kind: 'light', entityId };
+      }
+    });
     this.group.add(body);
     this.light = new THREE.PointLight(0xffffff, 0, 7, 2);
     this.light.position.set(0, config.y || 1.5, 0);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(512, 512);
     this.group.add(this.light);
-    const hit = new THREE.Mesh(new THREE.SphereGeometry(.34, 10, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(.6, 12, 10), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
     hit.position.y = config.y || 1.5;
     hit.userData = { kind: 'light', entityId };
     this.group.add(hit);
