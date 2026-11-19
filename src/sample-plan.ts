@@ -1,0 +1,603 @@
+import type { Plan } from "./types";
+
+export const samplePlan: Plan = {
+  "name": "Home",
+  "outdoorTemp": 29,
+  "camera": {
+    "azimuth": 34,
+    "elevation": 47
+  },
+  "scenes": [
+    {
+      "id": "bright",
+      "name": "Bright",
+      "icon": "sun",
+      "lights": {
+        "*": {
+          "on": true,
+          "brightness": 1,
+          "temp": 4200
+        }
+      }
+    },
+    {
+      "id": "cozy",
+      "name": "Cozy",
+      "icon": "sofa",
+      "lights": {
+        "*": {
+          "on": false
+        },
+        "living.floor": {
+          "on": true
+        },
+        "living.tv": {
+          "on": true,
+          "brightness": 0.7,
+          "color": "#ff7a3c"
+        },
+        "dining.pendant": {
+          "on": true,
+          "brightness": 0.45,
+          "temp": 2400
+        },
+        "kitchen.strip": {
+          "on": true,
+          "brightness": 0.6,
+          "temp": 2700
+        },
+        "bedroom.left": {
+          "on": true
+        },
+        "bedroom.right": {
+          "on": true
+        }
+      }
+    },
+    {
+      "id": "movie",
+      "name": "Movie",
+      "icon": "film",
+      "lights": {
+        "*": {
+          "on": false
+        },
+        "living.tv": {
+          "on": true,
+          "brightness": 0.9,
+          "color": "#6a4cff"
+        },
+        "kitchen.strip": {
+          "on": true,
+          "brightness": 0.2,
+          "temp": 2400
+        }
+      }
+    },
+    {
+      "id": "night",
+      "name": "Night",
+      "icon": "moon",
+      "lights": {
+        "*": {
+          "on": false
+        },
+        "bedroom.left": {
+          "on": true
+        },
+        "bath.mirror": {
+          "on": true,
+          "brightness": 0.25,
+          "temp": 2300
+        }
+      },
+      "acs": {
+        "bedroom.ac": {
+          "sleep": true
+        }
+      }
+    },
+    {
+      "id": "away",
+      "name": "Away",
+      "icon": "door",
+      "lights": {
+        "*": {
+          "on": false
+        }
+      },
+      "acs": {
+        "*": {
+          "on": false
+        }
+      }
+    }
+  ],
+  "wallHeight": 2.6,
+  "interiorWallHeight": 1.25,
+  "rooms": [
+    {
+      "id": "living",
+      "name": "Living",
+      "x": 0,
+      "y": 3.6,
+      "width": 6.4,
+      "length": 4.6,
+      "floor": "oak"
+    },
+    {
+      "id": "dining",
+      "name": "Dining",
+      "x": 6.4,
+      "y": 3.6,
+      "width": 4.0,
+      "length": 4.6,
+      "floor": "oak"
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "x": 6.4,
+      "y": 0,
+      "width": 4.0,
+      "length": 3.6,
+      "floor": "stone"
+    },
+    {
+      "id": "bedroom",
+      "name": "Bedroom",
+      "x": 0,
+      "y": 0,
+      "width": 4.2,
+      "length": 3.6,
+      "floor": "walnut"
+    },
+    {
+      "id": "bath",
+      "name": "Bathroom",
+      "x": 4.2,
+      "y": 0,
+      "width": 2.2,
+      "length": 3.6,
+      "floor": "tile"
+    }
+  ],
+  "openings": [
+    {
+      "type": "door",
+      "from": [
+        3.1,
+        3.6
+      ],
+      "to": [
+        4.0,
+        3.6
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "door",
+      "from": [
+        4.7,
+        3.6
+      ],
+      "to": [
+        5.5,
+        3.6
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "open",
+      "from": [
+        6.4,
+        4.2
+      ],
+      "to": [
+        6.4,
+        7.8
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "open",
+      "from": [
+        7.0,
+        3.6
+      ],
+      "to": [
+        10.0,
+        3.6
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "window",
+      "from": [
+        0,
+        1.0
+      ],
+      "to": [
+        0,
+        2.6
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "window",
+      "from": [
+        0,
+        7.0
+      ],
+      "to": [
+        0,
+        7.9
+      ],
+      "sill": 0,
+      "head": 2.1
+    },
+    {
+      "type": "window",
+      "from": [
+        0.9,
+        0
+      ],
+      "to": [
+        2.3,
+        0
+      ],
+      "sill": 1.5,
+      "head": 2.2
+    }
+  ],
+  "furniture": [
+    {
+      "type": "rug",
+      "x": 2.3,
+      "y": 6.0,
+      "size": [
+        2.5,
+        3.1
+      ],
+      "color": "#3b4a66",
+      "rotation": 0
+    },
+    {
+      "type": "tv",
+      "x": 0.32,
+      "y": 6.0,
+      "width": 1.7,
+      "rotation": 90
+    },
+    {
+      "type": "sofa",
+      "x": 3.95,
+      "y": 6.0,
+      "width": 2.5,
+      "color": "#8b93a7",
+      "rotation": -90
+    },
+    {
+      "type": "coffeeTable",
+      "x": 2.3,
+      "y": 6.0,
+      "rotation": 90
+    },
+    {
+      "type": "armchair",
+      "x": 1.9,
+      "y": 4.35,
+      "color": "#c28a5a",
+      "rotation": 12
+    },
+    {
+      "type": "plant",
+      "x": 0.5,
+      "y": 7.65,
+      "height": 1.5,
+      "rotation": 0
+    },
+    {
+      "type": "sideboard",
+      "x": 5.2,
+      "y": 7.85,
+      "width": 1.6,
+      "rotation": 180
+    },
+    {
+      "type": "diningSet",
+      "x": 8.5,
+      "y": 6.4,
+      "width": 1.9,
+      "chairs": 6,
+      "rotation": 0
+    },
+    {
+      "type": "plant",
+      "x": 9.95,
+      "y": 7.75,
+      "height": 1.1,
+      "rotation": 0
+    },
+    {
+      "type": "island",
+      "x": 8.5,
+      "y": 3.75,
+      "width": 2.2,
+      "stools": 3,
+      "rotation": 0
+    },
+    {
+      "type": "kitchen",
+      "x": 8.05,
+      "y": 0.41,
+      "width": 3.1,
+      "upper": true,
+      "rotation": 0
+    },
+    {
+      "type": "fridge",
+      "x": 10.02,
+      "y": 0.45,
+      "rotation": 0
+    },
+    {
+      "type": "rug",
+      "x": 2.1,
+      "y": 2.3,
+      "size": [
+        2.6,
+        1.6
+      ],
+      "color": "#6a5a52",
+      "rotation": 0
+    },
+    {
+      "type": "bed",
+      "x": 2.1,
+      "y": 1.2,
+      "width": 1.7,
+      "color": "#7f8fb5",
+      "rotation": 0
+    },
+    {
+      "type": "nightstand",
+      "x": 0.85,
+      "y": 0.4,
+      "rotation": 0
+    },
+    {
+      "type": "nightstand",
+      "x": 3.35,
+      "y": 0.4,
+      "rotation": 0
+    },
+    {
+      "type": "dresser",
+      "x": 3.87,
+      "y": 2.5,
+      "width": 1.3,
+      "rotation": -90
+    },
+    {
+      "type": "plant",
+      "x": 0.45,
+      "y": 3.15,
+      "height": 0.9,
+      "rotation": 0
+    },
+    {
+      "type": "vanity",
+      "x": 4.95,
+      "y": 0.38,
+      "width": 1.0,
+      "rotation": 0
+    },
+    {
+      "type": "bathtub",
+      "x": 5.92,
+      "y": 1.35,
+      "rotation": 90
+    },
+    {
+      "type": "toilet",
+      "x": 4.58,
+      "y": 2.5,
+      "rotation": 90
+    }
+  ],
+  "lights": [
+    {
+      "id": "living.main",
+      "name": "Ceiling",
+      "roomId": "living",
+      "x": 2.9,
+      "y": 6.0,
+      "z": 2.45,
+      "fixture": "ceiling",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness",
+        "temp"
+      ]
+    },
+    {
+      "id": "living.floor",
+      "name": "Floor lamp",
+      "roomId": "living",
+      "x": 0.6,
+      "y": 4.2,
+      "z": 1.4,
+      "fixture": "floor",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness"
+      ]
+    },
+    {
+      "id": "living.tv",
+      "name": "TV backlight",
+      "roomId": "living",
+      "x": 0.13,
+      "y": 6.0,
+      "z": 1.05,
+      "fixture": "strip",
+      "rot": 90,
+      "length": 1.5,
+      "capabilities": [
+        "brightness",
+        "color"
+      ]
+    },
+    {
+      "id": "dining.pendant",
+      "name": "Pendant",
+      "roomId": "dining",
+      "x": 8.5,
+      "y": 6.4,
+      "z": 1.75,
+      "fixture": "pendant",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness",
+        "temp"
+      ]
+    },
+    {
+      "id": "kitchen.spots",
+      "name": "Spots",
+      "roomId": "kitchen",
+      "x": 8.4,
+      "y": 2.0,
+      "z": 2.45,
+      "fixture": "spots",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness"
+      ]
+    },
+    {
+      "id": "kitchen.strip",
+      "name": "Counter light",
+      "roomId": "kitchen",
+      "x": 8.05,
+      "y": 0.42,
+      "z": 1.42,
+      "fixture": "strip",
+      "rot": 0,
+      "length": 2.9,
+      "capabilities": [
+        "brightness",
+        "temp"
+      ]
+    },
+    {
+      "id": "bedroom.main",
+      "name": "Ceiling",
+      "roomId": "bedroom",
+      "x": 2.1,
+      "y": 2.3,
+      "z": 2.45,
+      "fixture": "ceiling",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness",
+        "temp"
+      ]
+    },
+    {
+      "id": "bedroom.left",
+      "name": "Bedside left",
+      "roomId": "bedroom",
+      "x": 0.85,
+      "y": 0.4,
+      "z": 0.5,
+      "fixture": "table",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness"
+      ]
+    },
+    {
+      "id": "bedroom.right",
+      "name": "Bedside right",
+      "roomId": "bedroom",
+      "x": 3.35,
+      "y": 0.4,
+      "z": 0.5,
+      "fixture": "table",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness"
+      ]
+    },
+    {
+      "id": "bath.main",
+      "name": "Ceiling",
+      "roomId": "bath",
+      "x": 5.2,
+      "y": 2.0,
+      "z": 2.45,
+      "fixture": "ceiling",
+      "rot": 0,
+      "length": null,
+      "capabilities": [
+        "brightness"
+      ]
+    },
+    {
+      "id": "bath.mirror",
+      "name": "Mirror light",
+      "roomId": "bath",
+      "x": 4.95,
+      "y": 0.14,
+      "z": 1.95,
+      "fixture": "strip",
+      "rot": 0,
+      "length": 0.8,
+      "capabilities": [
+        "brightness",
+        "temp"
+      ]
+    }
+  ],
+  "acs": [
+    {
+      "id": "living.ac",
+      "name": "Living AC",
+      "roomId": "living",
+      "wall": "west",
+      "x": 4.45,
+      "y": 2.2,
+      "pos": [
+        0,
+        4.45
+      ]
+    },
+    {
+      "id": "bedroom.ac",
+      "name": "Bedroom AC",
+      "roomId": "bedroom",
+      "wall": "north",
+      "x": 3.3,
+      "y": 2.2,
+      "pos": [
+        3.3,
+        0
+      ]
+    }
+  ]
+} as unknown as Plan;
+export default samplePlan;

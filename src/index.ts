@@ -4,7 +4,7 @@
 import { LitElement, html, css } from 'lit';
 import { createWorld, type WorldHandle } from './engine/world';
 import { normalizePlan } from './engine/plan';
-import samplePlan from './sample-plan.json';
+import samplePlan from './sample-plan';
 import type { Plan } from './types';
 import { HABridge, type HassLike } from './bridge/ha-bridge';
 import * as THREE from 'three';
