@@ -49,11 +49,11 @@ export function createWorld(canvas: HTMLCanvasElement, config: NormConfig, opts:
 
   const { house, lighting, acs } = buildScene(config, scene, opts.entities);
 
-  // Night-time ambience plus a "moon" key light that casts the shadows.
-  scene.add(new THREE.HemisphereLight(0x8ea6ff, 0x0b0e17, 0.5));
+  // High-key architectural studio lighting: warm sunlight + soft ambient skylight
+  scene.add(new THREE.HemisphereLight(0xe2e8f0, 0x1e293b, 0.85));
   const { minX, minZ, maxX, maxZ } = config.bounds;
   const span = Math.max(maxX - minX, maxZ - minZ);
-  const moon = new THREE.DirectionalLight(0xa9c0ff, 1.1);
+  const moon = new THREE.DirectionalLight(0xfff7ed, 1.35);
   moon.position.set((minX + maxX) / 2 + 4, 10, (minZ + maxZ) / 2 - 4);
   moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
