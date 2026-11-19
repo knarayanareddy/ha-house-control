@@ -179,13 +179,14 @@ export class FloorplanCanvas extends LitElement {
     .viewport {
       flex: 1;
       width: 100%;
-      min-height: 280px;
+      min-height: 240px;
       background: #111722;
       border: 1px solid #384152;
       border-radius: 0 0 8px 8px;
       overflow: hidden;
       touch-action: none;
       cursor: grab;
+      margin-bottom: 58px;
     }
     .viewport:active {
       cursor: grabbing;
