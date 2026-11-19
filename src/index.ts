@@ -8,6 +8,7 @@ import samplePlan from './sample-plan.json';
 import type { Plan } from './types';
 import { HABridge, type HassLike } from './bridge/ha-bridge';
 import * as THREE from 'three';
+import './editor/floorplan-canvas';
 
 declare global { interface Window { HOUSE_CONTROL_VERSION?: string } }
 if (typeof window !== 'undefined') window.HOUSE_CONTROL_VERSION = '0.2.0';
@@ -21,6 +22,9 @@ export interface HouseControlCardConfig {
 
 export class HouseControlCard extends LitElement {
   private activeSheet?: { kind: 'light'|'climate'; id: string; entityId: string };
+  private activeMode: '3d'|'2d'|'split' = '3d';
+  private assistantMessage = '';
+  private promptBusy = false;
   private hoveredFixture?: { kind: 'light'|'climate'; id: string; entityId: string; name: string; room: string; stateText: string; x: number; y: number };
   private renderError?: string;
   static properties = {
@@ -28,6 +32,9 @@ export class HouseControlCard extends LitElement {
     config: { attribute: false },
     activeSheet: { state: true },
     hoveredFixture: { state: true },
+    activeMode: { state: true },
+    assistantMessage: { state: true },
+    promptBusy: { state: true },
     renderError: { state: true },
   };
 
@@ -39,7 +46,7 @@ export class HouseControlCard extends LitElement {
   private lastGesture?: { x: number; y: number; distance: number };
   private cameraTarget = new THREE.Vector3();
   private get config() { return this._config; }
-  private set config(value: HouseControlCardConfig | undefined) { this._config = value; if (this.isConnected && this.canvas) this.mountWorld(); }
+  private set config(value: HouseControlCardConfig | undefined) { const previous=this._config;this._config=value;this.requestUpdate('config',previous); }
   private bridge?: HABridge;
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
@@ -158,7 +165,7 @@ export class HouseControlCard extends LitElement {
       user-select: none;
       -webkit-user-select: none;
     }
-    .scenes{position:absolute;z-index:2;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;max-width:calc(100% - 20px);overflow:auto;padding:5px;border-radius:16px;background:#101727bb;backdrop-filter:blur(12px)}
+    .scenes{position:absolute;z-index:2;top:60px;left:50%;transform:translateX(-50%);display:flex;gap:6px;max-width:calc(100% - 20px);overflow:auto;padding:5px;border-radius:16px;background:#101727bb;backdrop-filter:blur(12px)}
     .scenes button,.close,.power,.step button,.mode button,.fan button{border:1px solid #ffffff25;background:#ffffff12;color:inherit;border-radius:999px;padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap;user-select:none}.scenes button:hover,.mode button.selected,.fan button.selected{background:#3b82f6;border-color:#60a5fa;color:#fff}
     .tooltip{position:absolute;z-index:3;pointer-events:none;transform:translate(12px,12px);padding:8px 11px;border:1px solid #ffffff25;border-radius:10px;background:#111827dd;backdrop-filter:blur(10px);font-size:12px;box-shadow:0 8px 30px #0006}.tooltip strong{display:block}
     .veil{position:absolute;inset:0;z-index:10;background:#02040a66;backdrop-filter:blur(2px);display:flex;align-items:flex-end;justify-content:center;cursor:default}
@@ -170,12 +177,19 @@ export class HouseControlCard extends LitElement {
     .power{width:100%;padding:10px 16px;font-size:14px;font-weight:600;border-radius:12px;transition:background .15s, border-color .15s}.power.on{background:#2563eb;border-color:#60a5fa;color:#ffffff;box-shadow:0 0 16px #3b82f655}
     .swatches{display:flex;gap:9px;flex-wrap:wrap}.swatches button{width:29px;height:29px;border-radius:50%;border:2px solid #ffffff70;cursor:pointer}
     .step{display:flex;align-items:center;justify-content:center;gap:24px;margin:12px}.step output{font-size:42px;font-variant-numeric:tabular-nums}.step button{width:48px;height:48px;font-size:24px;padding:0}.mode,.fan{display:flex;gap:6px;flex-wrap:wrap}.climate-meta{text-align:center;color:#bdc7d8;font-size:13px}
-    @media(max-width:480px){:host{height: min(72vh,520px);min-height:380px}.scenes{top:auto;bottom:8px;transform:translateX(-50%)}.scenes button{padding:7px 10px}.sheet{padding:18px 16px max(18px,env(safe-area-inset-bottom))}}
+    .mode-toggle{position:absolute;z-index:5;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border:1px solid #ffffff26;border-radius:999px;background:#0f172acc;backdrop-filter:blur(14px);box-shadow:0 6px 24px #0005}
+    .mode-toggle button{border:0;border-radius:999px;background:transparent;color:#d5dfef;padding:8px 12px;font:600 12px/1 system-ui,sans-serif;cursor:pointer;white-space:nowrap}.mode-toggle button.active{background:#38bdf8;color:#062132;box-shadow:0 0 16px #38bdf855}
+    .content{position:absolute;inset:0}.three-pane,.two-pane{display:none;min-width:0;min-height:0}.content.mode-3d .three-pane{display:block;position:absolute;inset:0}.content.mode-2d .two-pane{display:block;position:absolute;inset:0}.content.mode-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#526074}.content.mode-split .three-pane,.content.mode-split .two-pane{display:block;position:relative;overflow:hidden;background:#0a0e1a}.three-pane canvas{width:100%;height:100%;display:block;touch-action:none}.two-pane floorplan-canvas{display:block;width:100%;height:100%;overflow:auto}.mode-split .two-pane floorplan-canvas{height:100%}
+    .assist-wrap{position:absolute;z-index:7;bottom:64px;left:50%;transform:translateX(-50%);width:min(540px,90%)}.assist-response{margin:0 0 8px auto;max-width:92%;max-height:112px;overflow:auto;padding:11px 14px;border:1px solid #ffffff2b;border-radius:16px;background:#101827e8;color:#eef5ff;backdrop-filter:blur(16px);box-shadow:0 8px 30px #0007;font-size:13px}.assist-bar{display:flex;align-items:center;gap:9px;padding:6px 8px 6px 14px;border:1px solid #ffffff35;border-radius:999px;background:#101827dd;backdrop-filter:blur(16px);box-shadow:0 8px 32px #0008}.assist-bar .sparkle{font-size:19px}.assist-bar input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#fff;font:14px system-ui,sans-serif}.assist-bar input::placeholder{color:#aab6c8}.assist-bar button{width:34px;height:34px;border:0;border-radius:50%;background:#38bdf8;color:#062132;font-size:20px;line-height:1;cursor:pointer}.assist-bar button:disabled{opacity:.55;cursor:wait}
+    .error-overlay{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box;background:#0a0e1aee}
+    @media(max-width:620px){.mode-toggle button{padding:8px 8px;font-size:11px}.content.mode-split{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.assist-wrap{bottom:54px}.assist-bar input{font-size:13px}}
+    @media(max-width:480px){:host{height:min(72vh,520px);min-height:380px}.scenes{top:auto;bottom:8px;transform:translateX(-50%)}.scenes button{padding:7px 10px}.sheet{padding:18px 16px max(18px,env(safe-area-inset-bottom))}}
   `;
 
   public setConfig(config: HouseControlCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this.config = config;
+    this.mountWorld();
   }
 
   public static async getConfigElement() {
@@ -191,6 +205,48 @@ export class HouseControlCard extends LitElement {
     return 6;
   }
 
+  private switchMode(mode:'3d'|'2d'|'split') { if(this.activeMode===mode)return;const previous=this.activeMode;this.activeMode=mode;this.activeSheet=undefined;this.requestUpdate('activeMode',previous); }
+  private onFrontPlanChanged = (event: CustomEvent<{plan:Plan}|Plan>) => {
+    const detail=event.detail as {plan?:Plan};
+    const plan=detail?.plan ?? event.detail as Plan;
+    if(!plan?.rooms) return;
+    this.config={...(this.config??{type:'custom:house-control-card'}),plan};
+    this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:this._config},bubbles:true,composed:true}));
+    this.mountWorld();
+  };
+  private addRoomFromPrompt(query:string):string|undefined {
+    const intent=/\b(add|create|draw|build)\b.*\b(room|balcony|extension|space)\b|\bbalcony\b|\bexpand\s+(?:the\s+)?living room\b/i;
+    if(!intent.test(query))return undefined;
+    const plan=this.config?.plan??samplePlan as unknown as Plan;
+    const size=query.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+    const width=size?Number(size[1]):3,length=size?Number(size[2]):3;
+    const lower=query.toLowerCase();
+    const name=lower.includes('balcony')?'Balcony':lower.includes('living room')?'Living Room Extension':lower.includes('bedroom')?'Bedroom Extension':'New Room';
+    const slug=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    const ids=new Set(plan.rooms.map(r=>r.id));let id=slug,n=2;while(ids.has(id))id=`${slug}_${n++}`;
+    const maxX=plan.rooms.length?Math.max(...plan.rooms.map(r=>r.x+r.width)):0;
+    const minZ=plan.rooms.length?Math.min(...plan.rooms.map(r=>r.y)):0;
+    const living=plan.rooms.find(r=>`${r.name??''} ${r.id}`.toLowerCase().includes('living'));
+    let x=maxX,y=minZ;
+    if(name==='Living Room Extension'&&living){x=living.x;y=living.y+living.length;}
+    else if(name==='Balcony'&&living){x=living.x-width;y=living.y+Math.max(0,(living.length-length)/2);}
+    const next:Plan={...plan,rooms:[...plan.rooms,{id,name,x,y,width,length,floor:'oak'}]};
+    this.onFrontPlanChanged(new CustomEvent('plan-changed',{detail:{plan:next}}));
+    return `Added ${name} (${width} × ${length} m) to the floor plan.`;
+  }
+  private onPromptSubmit = async (event:SubmitEvent) => {
+    event.preventDefault();const form=event.currentTarget as HTMLFormElement;const input=form.querySelector('input[name="query"]') as HTMLInputElement;const query=input.value.trim();if(!query)return;
+    const layoutMessage=this.addRoomFromPrompt(query);this.assistantMessage=layoutMessage??'Sending your request to Home Assistant Assist…';this.promptBusy=true;input.value='';this.requestUpdate();
+    try {
+      if(!this.hass?.callService)throw new Error('Home Assistant is not connected to this card.');
+      const result=await this.hass.callService('conversation','process',{text:query});
+      const data=result as any;const speech=data?.response?.speech?.plain?.speech??data?.speech?.plain?.speech??data?.response?.text??data?.text;
+      this.assistantMessage=[layoutMessage,speech].filter(Boolean).join(' ') || 'Request sent to Home Assistant Assist.';
+    } catch(error) {
+      const message=error instanceof Error?error.message:String(error);
+      this.assistantMessage=[layoutMessage,`Assist could not respond: ${message}`].filter(Boolean).join(' ');
+    } finally { this.promptBusy=false;this.requestUpdate(); }
+  };
   private closeSheet = (e?: Event) => {
     if (e) {
       e.preventDefault();
@@ -246,16 +302,6 @@ export class HouseControlCard extends LitElement {
   };
 
   protected render() {
-    if (this.renderError) {
-      return html`<div class="stage error-box">
-        <div>
-          <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
-          <strong>WebGL Initialization Issue</strong>
-          <p style="font-size:12px;opacity:0.85;max-width:320px;margin:8px auto;line-height:1.4;">${this.renderError}</p>
-          <button class="retry-btn" @click=${() => this.mountWorld()}>Retry 3D Stage</button>
-        </div>
-      </div>`;
-    }
     const plan = this.config?.plan ?? samplePlan as unknown as Plan;
     const sheet = this.activeSheet;
     const light = sheet?.kind === 'light' ? this.world?.lighting.units.find((u) => u.config.id === sheet.id) : undefined;
@@ -269,7 +315,20 @@ export class HouseControlCard extends LitElement {
     const roomName = sheet ? plan.rooms.find((r) => r.id === (light?.config.room ?? ac?.config.room))?.name ?? (light?.config.room ?? ac?.config.room) : '';
     const colors = ['#ff5a4f','#ff9a3c','#ffd84a','#5fe08a','#42d6e8','#4f8dff','#8b5cff','#ff5fc4'];
     return html`<div class="stage">
-      <canvas id="view"></canvas>
+      <div class=${`content mode-${this.activeMode}`}>
+        <div class="three-pane"><canvas id="three-stage"></canvas></div>
+        <div class="two-pane"><floorplan-canvas .plan=${plan} @plan-changed=${this.onFrontPlanChanged}></floorplan-canvas></div>
+      </div>
+      <nav class="mode-toggle" aria-label="View mode">
+        <button class=${this.activeMode==='3d'?'active':''} @click=${()=>this.switchMode('3d')}>🏠 3D Twin</button>
+        <button class=${this.activeMode==='2d'?'active':''} @click=${()=>this.switchMode('2d')}>📐 2D Sketcher</button>
+        <button class=${this.activeMode==='split'?'active':''} @click=${()=>this.switchMode('split')}>◫ Split View</button>
+      </nav>
+      ${this.renderError ? html`<div class="error-overlay"><div><strong>WebGL Initialization Issue</strong><p>${this.renderError}</p><button class="retry-btn" @click=${()=>this.mountWorld()}>Retry 3D Stage</button></div></div>` : ''}
+      <form class="assist-wrap" @submit=${this.onPromptSubmit}>
+        ${this.assistantMessage ? html`<div class="assist-response" role="status">${this.assistantMessage}</div>` : ''}
+        <label class="assist-bar"><span class="sparkle" aria-hidden="true">✨</span><input type="text" name="query" autocomplete="off" placeholder="Ask AI... (e.g. 'Make bedroom cozy', 'Turn off all ACs', 'Add a 4x3 balcony')" ?disabled=${this.promptBusy}><button type="submit" aria-label="Send prompt" ?disabled=${this.promptBusy}>${this.promptBusy?'…':'➔'}</button></label>
+      </form>
       ${plan.scenes?.length ? html`<nav class="scenes" aria-label="Lighting scenes">${plan.scenes.map((scene) => html`<button @click=${() => this.applyScene(scene)}>${scene.name}</button>`)}</nav>` : ''}
       ${this.hoveredFixture ? html`<div class="tooltip" style=${`left:${Math.min(this.hoveredFixture.x, (this.clientWidth || 400) - 220)}px;top:${Math.min(this.hoveredFixture.y, 80)}px`}><strong>${this.hoveredFixture.room} · ${this.hoveredFixture.name}</strong>${this.hoveredFixture.stateText}</div>` : ''}
       ${sheet ? html`<div class="veil" @click=${this.closeSheet}><section class="sheet" role="dialog" aria-modal="true" @click=${(e: Event) => e.stopPropagation()}>
@@ -287,7 +346,7 @@ export class HouseControlCard extends LitElement {
   }
 
   protected firstUpdated(): void {
-    const canvas = this.shadowRoot!.querySelector('canvas')!;
+    const canvas = this.shadowRoot!.querySelector('#three-stage') as HTMLCanvasElement;
     this.canvas = canvas;
     this.mountWorld();
     canvas.addEventListener('pointerdown', this.onPointerDown);
@@ -320,6 +379,9 @@ export class HouseControlCard extends LitElement {
   protected updated(changed: Map<PropertyKey, unknown>): void {
     super.updated(changed as never);
     if (changed.has('hass') && this.hass) this.bridge?.setHass(this.hass);
+    // Resize the existing renderer after CSS mode changes. Never dispose or
+    // replace the canvas merely to switch views: keep its WebGL context alive.
+    if (changed.has('activeMode')) { this.world?.resize(); this.world?.requestRender(4); }
   }
 
   disconnectedCallback(): void {
